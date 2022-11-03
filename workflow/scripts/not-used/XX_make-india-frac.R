@@ -319,4 +319,3 @@ myfun(
     path="data/district_frac_1960",
     suffix="ll"
 )
-
