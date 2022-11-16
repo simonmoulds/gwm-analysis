@@ -21,8 +21,6 @@ rule all:
         # 'results/fig/fig4.png'
 
 use rule regrid_jules_output from jules_mosart as jules_mosart_regrid_jules_output with:
-    # input:
-    #     config='config/gwm-arc-config.yml'
     output:
         'results/regrid_filenames.txt'
 
