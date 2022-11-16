@@ -11,31 +11,47 @@ library(rnaturalearthdata)
 library(rgdal)
 library(dplyr)
 
-## Load custom utilities
-source("utils.R")
-
-## Output for analysis
-analysis_output_dir = "../data/analysis"
-if (!dir.exists(analysis_output_dir)) {
-    dir.create(analysis_output_dir)
+## Extract configuration info
+if (sys.nframe() == 0L) {
+  args = commandArgs(trailingOnly=TRUE)
+  outputdir = args[1]
+  args = commandArgs()
+  m <- regexpr("(?<=^--file=).+", args, perl=TRUE)
+  cwd <- dirname(regmatches(args, m))
 }
+## Load custom utilities
+source(file.path(cwd, "utils.R"))
+
+## Create output directory if it does not exist
+if (!dir.exists(outputdir))
+  dir.create(outputdir, recursive = TRUE)
 
 ## Irrgation sources
-irrigation_sources = c("canal", "other_sources", "other_wells", "tanks", "tubewells")
+irrigation_sources = c(
+  "canal", "other_sources", "other_wells", "tanks", "tubewells"
+)
 
+## TODO put these in config
 ## Policies, reference year for policies
-policies = c("historical") #, "current_canal") #, "restored_canal")
+policies = c("historical", "current_canal", "restored_canal")
 for (policy in policies) {
-  dir.create(file.path(analysis_output_dir, policy), showWarnings = FALSE)
+  dir.create(file.path(outputdir, policy), showWarnings = FALSE)
 }
+
+## TODO this has been referred to before - put in config
 reference_year = 2010
 
+## TODO put these in config
 ## JULES simulation details
 jules_output_dir = "../jules-output/u-ci496"
 ## *_irrig         : historical irrigated area
 ## *_irrig_current : current irrigated area
 ## *_noirrig       : no irrigation
-id_stems = c("JULES_vn6.1_irrig", "JULES_vn6.1_irrig_current", "JULES_vn6.1_noirrig")
+id_stems = c(
+  "JULES_vn6.1_irrig",
+  "JULES_vn6.1_irrig_current",
+  "JULES_vn6.1_noirrig"
+)
 job_name = "jules_%s"
 profile_name = "daily_hydrology"
 start_year = 1979
@@ -56,13 +72,14 @@ season_maps = vector("list", length(seasons)) %>% setNames(seasons)
 ## Take agricultural season Nov-Oct [start of Rabi to end of Kharif]
 ## TODO check for consistency with land use change [run JULES Nov-Oct?]
 season_months = list(
-    continuous = c(11:22),
-    kharif = c(18:22),
-    rabi = c(11:15),
-    zaid = c(16:17)
+  continuous = c(11:22),
+  kharif = c(18:22),
+  rabi = c(11:15),
+  zaid = c(16:17)
 )
 year_months = 11:22 # Nov-Oct (year+1)
 
+## TODO put these functions in utils.R
 load_jules_output <- function(id_stem, policy, yr, ...) {
 
   irri_yr <- ifelse(policy == "historical", yr, reference_year)
@@ -610,15 +627,15 @@ for (m in 1:length(policies)) { # historical, current_canal, restored_canal
       suffix = sub("(JULES)_(vn.*)_([a-z]+)", "\\3", id_stems[i])
       annual_total_irrigation = stackApply(stack(total_irrig_water), indices=rep(1, 12), fun=sum)
       fn <- paste0("annual_total_irrigation_", policy, "_", yr, "_", suffix, ".tif")
-      writeRaster(annual_total_irrigation, file.path(analysis_output_dir, policy, fn), overwrite = TRUE)
+      writeRaster(annual_total_irrigation, file.path(outputdir, policy, fn), overwrite = TRUE)
       ## Annual gw irrigation
       annual_gw_irrigation = stackApply(stack(gw_irrig_water), indices=rep(1, 12), fun=sum)
       fn <- paste0("annual_gw_irrigation_", policy, "_", yr, "_", suffix, ".tif")
-      writeRaster(annual_gw_irrigation, file.path(analysis_output_dir, policy, fn), overwrite = TRUE)
+      writeRaster(annual_gw_irrigation, file.path(outputdir, policy, fn), overwrite = TRUE)
       ## Annual sw irrigation
       annual_sw_irrigation = stackApply(stack(sw_irrig_water), indices=rep(1, 12), fun=sum)
       fn <- paste0("annual_sw_irrigation_", policy, "_", yr, "_", suffix, ".tif")
-      writeRaster(annual_sw_irrigation, file.path(analysis_output_dir, policy, fn), overwrite = TRUE)
+      writeRaster(annual_sw_irrigation, file.path(outputdir, policy, fn), overwrite = TRUE)
       ## Monthly and season-wise total/gw/sw irrigation
       for (j in 1:length(seasons)) {
         season = seasons[j]
@@ -629,7 +646,7 @@ for (m in 1:length(policies)) { # historical, current_canal, restored_canal
             fun=sum
           )
           fn <- paste0(season, "_", type, "_irrigation_", policy, "_", yr, "_", suffix, ".tif")
-          writeRaster(season_irrigation, file.path(analysis_output_dir, policy, fn), overwrite=TRUE)
+          writeRaster(season_irrigation, file.path(outputdir, policy, fn), overwrite=TRUE)
         }
       }
       for (j in 1:12) {
@@ -638,37 +655,37 @@ for (m in 1:length(policies)) { # historical, current_canal, restored_canal
           maps = stack(lapply(seasons, FUN=function(season) season_irrig_maps[[season]][[type]][[j]]))
           month_irrigation = stackApply(maps, indices=rep(1, length(seasons)), fun=sum)
           fn <- paste0(type, "_irrigation_", policy, "_", yr, "_", formatC(month, width=2, flag=0), "_", suffix, ".tif")
-          writeRaster(month_irrigation, file.path(analysis_output_dir, policy, fn), overwrite = TRUE)
+          writeRaster(month_irrigation, file.path(outputdir, policy, fn), overwrite = TRUE)
         }
       }
       ## Annual ET
       annual_et = stackApply(stack(et), indices=rep(1, 12), fun=sum)
       fn <- paste0("annual_et_", policy, "_", yr, "_", suffix, ".tif")
-      writeRaster(annual_et, file.path(analysis_output_dir, policy, fn), overwrite = TRUE)
+      writeRaster(annual_et, file.path(outputdir, policy, fn), overwrite = TRUE)
       ## Annual precip
       annual_precip = stackApply(stack(precip), indices=rep(1, 12), fun=sum)
       fn <- paste0("annual_precip_", policy, "_", yr, "_", suffix, ".tif")
-      writeRaster(annual_precip, file.path(analysis_output_dir, policy, fn), overwrite = TRUE)
+      writeRaster(annual_precip, file.path(outputdir, policy, fn), overwrite = TRUE)
       ## Annual surface runoff
       annual_surf_roff = stackApply(stack(surf_roff), indices=rep(1, 12), fun=sum)
       fn <- paste0("annual_surf_roff_", policy, "_", yr, "_", suffix, ".tif")
-      writeRaster(annual_surf_roff, file.path(analysis_output_dir, policy, fn), overwrite = TRUE)
+      writeRaster(annual_surf_roff, file.path(outputdir, policy, fn), overwrite = TRUE)
       ## Annual subsurface runoff
       annual_sub_surf_roff = stackApply(stack(sub_surf_roff), indices=rep(1, 12), fun=sum)
       fn <- paste0("annual_sub_surf_roff_", policy, "_", yr, "_", suffix, ".tif")
-      writeRaster(annual_sub_surf_roff, file.path(analysis_output_dir, policy, fn), overwrite = TRUE)
+      writeRaster(annual_sub_surf_roff, file.path(outputdir, policy, fn), overwrite = TRUE)
       ## Recharge
       Qin = stackApply(stack(sub_surf_roff), indices=rep(1, 12), fun=sum)
       fn <- paste0("recharge_", policy, "_", yr, "_", suffix, ".tif")
-      writeRaster(Qin, file.path(analysis_output_dir, policy, fn), overwrite = TRUE)
+      writeRaster(Qin, file.path(outputdir, policy, fn), overwrite = TRUE)
       ## Abstraction
       Qout = stackApply(stack(gw_irrig_water), indices=rep(1, 12), fun=sum)
       fn <- paste0("abstraction_", policy, "_", yr, "_", suffix, ".tif")
-      writeRaster(Qout, file.path(analysis_output_dir, policy, fn), overwrite = TRUE)
+      writeRaster(Qout, file.path(outputdir, policy, fn), overwrite = TRUE)
       ## Change in storage
       dS = Qin - Qout
       fn <- paste0("dS", policy, "_", yr, "_", suffix, ".tif")
-      writeRaster(dS, file.path(analysis_output_dir, policy, fn), overwrite = TRUE)
+      writeRaster(dS, file.path(outputdir, policy, fn), overwrite = TRUE)
   }
     setTxtProgressBar(pb, k)
   }
