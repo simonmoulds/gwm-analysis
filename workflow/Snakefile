@@ -10,6 +10,8 @@ import os
 module jules_mosart:
     snakefile:
         github("simonmoulds/jules-mosart", path="workflow/Snakefile", branch="main")
+    config:
+        config
 
 rule all:
     input:
