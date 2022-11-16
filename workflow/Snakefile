@@ -25,6 +25,7 @@ rule all:
 use rule regrid_jules_output from jules_mosart as jules_mosart_regrid_jules_output with:
     input:
         script='/home/cenv0857/jules-mosart/workflow/scripts/regrid-jules-output.py',
+        config=config
     output:
         'results/regrid_filenames.txt'
 
