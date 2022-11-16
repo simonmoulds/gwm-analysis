@@ -8,6 +8,7 @@ import xarray
 import pandas as pd
 import datetime
 import calendar
+import click
 
 # The point of this script is to disaggregate JULES
 # irrig_water output between the various irrigated
@@ -17,34 +18,25 @@ import calendar
 # * Check whether we ought to account for dynamic land cover
 # * Check whether we need to change the year start (i.e. start of kharif/rabi)
 
-# Prior to running this script the following scripts
-# from jules-mosart package must have been run:
-
-# $ conda activate mosart
-# $ ./01_regrid_jules_output.sh
-# $ ./02_aggregate_jules_output.sh
-# $ ./03_resample_jules_output.sh
-
-# TODO add to config
-JULES_OUTPUTDIR = '../jules-output/u-ci496'
-JULES_ID_STEM = 'JULES_vn6.1_irrig_current'
 F8_FILLVAL = netCDF4.default_fillvals['f8']
 
-# TODO use as command line args from Snakemake
-RESOURCEDIR = 'resources'
-OUTPUTDIR = 'results/jules_output'
+@click.command()
+@click.option('-i', '--inputfile', default='.', help='Name of output file')
+@click.option('-o', '--outputfile', default='.', help='Name of output file')
+@click.option('--config', default='config.yml', help='YAML configuration file')
+def main(inputfile, outputfile, config):
 
-def main():
+    ancil_datadir = config['ancil_datadir']
     land_fn = os.path.join(
-        RESOURCEDIR,
+        ancil_datadir,
         'wfdei/ancils/WFD-EI-LandFraction2d_igp.nc'
     )
     frac_fn = os.path.join(
-        RESOURCEDIR,
+        ancil_datadir,
         'wfdei/ancils/jules_5pft_w_crops_veg_frac_2015_igp_wfdei.nc'
     )
     irr_schedule_fn = os.path.join(
-        RESOURCEDIR,
+        ancil_datadir,
         '../data/wfdei/ancils/jules_5pft_w_crops_irrig_schedule.nc'
     )
     irr_schedule_ref_year = 2015
@@ -64,21 +56,29 @@ def main():
     # FIXME be careful here!!!
     irr_frac = frac.values[6:10, ...] * land.values
 
+    # Read JULES files to process
+    with open(inputfile, 'r') as f:
+        input_filelist = [ln.strip() for ln in f.readlines()]
+
     # Read irrigation schedule
     irr_schedule = xarray.open_dataset(irr_schedule_fn)['irr_schedule']
-    for year in range(1979, 2014 + 1):
-        print('Processing irrig_water data for year ' + str(year), end='\r')
-        jules_output_fn = os.path.join(
-            JULES_OUTPUTDIR,
-            JULES_ID_STEM + '.jules_' + str(year)
-            + '.daily_hydrology.' + str(year) + '.2D.nc'
+
+    output_filelist = open(outputfile, 'w')
+    for filepath in tqdm(input_filelist):
+        path = os.path.split(filepath)[0]
+        filename = os.path.split(filepath)[1]
+        basename = os.path.splitext(filename)[0]
+        nc_outputfile = os.path.join(
+            path,
+            filename.replace('irrig_water', 'rel_irrig_water')
         )
-        irrig_water = xarray.open_dataset(jules_output_fn)['irrig_water']
+
+        irrig_water = xarray.open_dataset(filepath)['irrig_water']
         irrig_water_time = [
             pd.Timestamp(tm).to_pydatetime() for tm in irrig_water.time.values
         ]
         # Get time dimension from output file
-        with netCDF4.Dataset(jules_output_fn) as nc:
+        with netCDF4.Dataset(filepath) as nc:
             time_units = nc['time'].units
             time_calendar = nc['time'].calendar
             time_values = nc['time'][:]
@@ -88,13 +88,7 @@ def main():
             irr_long_name = nc['irrig_water'].long_name
 
         # Create new netCDF4 file to store relative irrigation water use
-        fname = os.path.join(
-            '../jules-output/u-ci496',
-            JULES_ID_STEM + '.jules_' + str(year)
-            + '.daily_hydrology.rel_irrig_water.'
-            + str(year) + '.2D.nc'
-        )
-        ncout = netCDF4.Dataset(fname, 'w')
+        ncout = netCDF4.Dataset(nc_outputfile, 'w')
         ncout.createDimension('time', None)        
         ncout.createDimension('dim0', len(dim0_values))
         ncout.createDimension('lat', len(lat_values))
@@ -177,20 +171,24 @@ def main():
         land.close()
         frac.close()
         irr_schedule.close()
+        # # Now aggregate to month using xarray
+        # x = xarray.open_dataset(fname)
+        # x['irrig_water'] = x['irrig_water'] * 60 * 60 * 24 / 1000
+        # x_month = x.groupby('time.month').sum(dim='time')
+        # fname = os.path.join(
+        #     OUTPUTDIR,
+        #     JULES_ID_STEM + '.jules_' + str(year)
+        #     + '.daily_hydrology.rel_irrig_water.'
+        #     + str(year) + '.2D.month.nc'
+        # )
+        # x_month.to_netcdf(fname)
+        # x.close()
 
-        # Now aggregate to month using xarray
-        x = xarray.open_dataset(fname)
-        x['irrig_water'] = x['irrig_water'] * 60 * 60 * 24 / 1000
-        x_month = x.groupby('time.month').sum(dim='time')
-        fname = os.path.join(
-            OUTPUTDIR,
-            JULES_ID_STEM + '.jules_' + str(year)
-            + '.daily_hydrology.rel_irrig_water.'
-            + str(year) + '.2D.month.nc'
-        )
-        x_month.to_netcdf(fname)
-        x.close()
-        
+        # Add output file to list
+        output_filelist.write(("%s" + os.linesep) % nc_outputfile)
+
+    output_filelist.close()
+
 if __name__ == '__main__':
     main()
 

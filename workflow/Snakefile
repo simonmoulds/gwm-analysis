@@ -4,8 +4,15 @@
 # in particular regarding the standardized folder structure mentioned there. 
 import os
 
+JULES_MOSART='/home/cenv0857/jules-mosart'
 CONFIG='config/gwm-arc-config.yml'
 configfile: CONFIG
+
+STEMS=[
+    'JULES_vn6.1_irrig_current',
+    'JULES_vn6.1_irrig',
+    'JULES_vn6.1_noirrig'
+]
 
 module jules_mosart:
     snakefile:
@@ -15,17 +22,53 @@ module jules_mosart:
 
 rule all:
     input:
-        'results/regrid_filenames.txt'
-        # 'results/irrigation_policy_maps'
-        # 'results/fig/fig1.png',
-        # 'results/fig/fig2.png',
-        # 'results/fig/fig3.png',
-        # 'results/fig/fig4.png'
+        'results/regrid_filenames_{stem}.txt',
+        'results/aggregate_month_filenames_{stem}.txt',
+        'results/resample_filenames_{stem}.txt'
 
 use rule regrid_jules_output from jules_mosart as jules_mosart_regrid_jules_output with:
     input:
-        script='/home/cenv0857/jules-mosart/workflow/scripts/regrid-jules-output.py',
+        script=os.path.join(
+            JULES_MOSART,
+            'workflow/scripts/regrid-jules-output.py'
+        ),
         config=CONFIG
+
+use rule aggregate_jules_output_month from jules_mosart as jules_mosart_aggregate_jules_output_month with:
+    input:
+        script=os.path.join(
+            JULES_MOSART,
+            'workflow/scripts/aggregate-jules-output.py'
+        ),
+        config=CONFIG
+
+use rule resample_jules_output from jules_mosart as jules_mosart_resample_jules_output with:
+    input:
+        script=os.path.join(
+            JULES_MOSART,
+            'workflow/scripts/resample-jules-output.py'
+        ),
+        config=CONFIG
+
+rule process_jules_output:
+    input:
+        regrid_filenames='results/regrid_filenames_{stem}.txt',
+        script='workflow/scripts/process-jules-output.py',
+        config=CONFIG
+    output:
+        'results/relative_irrigation_filenames_{stem}.txt'
+    params:
+        None
+    resources:
+        time = '00:30:00',
+        mem_mb = 4000,
+        partition = 'short'
+    conda:
+        'gwm'
+    shell:
+        """
+        python {input.script} -i {input.regrid_filenames} -o {output} --config {input.config}
+        """
 
 # rule prepare_command_areas:
 #     input:
@@ -76,34 +119,34 @@ use rule regrid_jules_output from jules_mosart as jules_mosart_regrid_jules_outp
 #     input:
 #         script='workflow/scripts/validate-jules-output.R'
 
-rule compute_water_balance:
-    input:
-        script='workflow/scripts/compute-water-balance.R'
-    output:
-        directory('results/analysis')
-    params:
-        None
-    resources:
-        time = '00:30:00',
-        mem_mb = 4000,
-        partition = 'short'
-    shell:
-        """
-        Rscript {input.script} {output}
-        """
+# rule compute_water_balance:
+#     input:
+#         script='workflow/scripts/compute-water-balance.R'
+#     output:
+#         directory('results/analysis')
+#     params:
+#         None
+#     resources:
+#         time = '00:30:00',
+#         mem_mb = 4000,
+#         partition = 'short'
+#     shell:
+#         """
+#         Rscript {input.script} {output}
+#         """
 
-rule make_plots:
-    input:
-        script='workflow/scripts/make-plots.R'
-    output:
-        directory('results/fig')
-    params:
-        None
-    resources:
-        time = '00:30:00',
-        mem_mb = 4000,
-        partition = 'short'
-    shell:
-        """
-        Rscript {input.script} {output}
-        """
+# rule make_plots:
+#     input:
+#         script='workflow/scripts/make-plots.R'
+#     output:
+#         directory('results/fig')
+#     params:
+#         None
+#     resources:
+#         time = '00:30:00',
+#         mem_mb = 4000,
+#         partition = 'short'
+#     shell:
+#         """
+#         Rscript {input.script} {output}
+#         """

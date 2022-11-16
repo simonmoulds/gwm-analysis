@@ -1,7 +1,7 @@
 ## Author : Simon Moulds
 ## Date   : October 2021
 
-get_jules_month_data = function(year, month, varname, id_stem, job_name, profile_name) {
+get_jules_month_data <- function(year, month, varname, id_stem, job_name, profile_name) {
     if (month > 12) {
         month = month - 12
         year_offset = 1
@@ -24,7 +24,7 @@ get_jules_month_data = function(year, month, varname, id_stem, job_name, profile
     r    
 }
 
-get_jules_month_irrig_rel_data = function(year, month, varname, id_stem, job_name, profile_name) {
+get_jules_month_irrig_rel_data <- function(year, month, varname, id_stem, job_name, profile_name) {
     if (month > 12) {
         month = month - 12
         year_offset = 1
@@ -58,7 +58,7 @@ get_jules_month_irrig_rel_data = function(year, month, varname, id_stem, job_nam
     st
 }
 
-get_jules_jjas_data = function(year, varname) {
+get_jules_jjas_data <- function(year, varname) {
     maps = list()    
     for (i in 1:4) {
         ## +5 so we start at June
@@ -68,7 +68,7 @@ get_jules_jjas_data = function(year, varname) {
     sm
 }
 
-get_jules_year_data = function(year, month, varname) {
+get_jules_year_data <- function(year, month, varname) {
     maps = list()
     for (i in 1:12) {
         maps[[i]] = get_jules_month_data(year, i, varname)
@@ -77,7 +77,7 @@ get_jules_year_data = function(year, month, varname) {
     sm
 }
 
-get_irr_frac = function(year, season, policy="current_canal") {
+get_irr_frac <- function(year, season, policy="current_canal") {
     if (policy %in% policies) {
         if (policy == "historical") {
             suffix = ".tif"
@@ -135,7 +135,7 @@ get_irr_frac = function(year, season, policy="current_canal") {
 ##     template
 ## }
 
-get_sw_gw_irr_frac = function(year, season, policy) {
+get_sw_gw_irr_frac <- function(year, season, policy) {
     maps = get_irr_frac(year, season, policy)
     sw_maps = maps[[c("canal","other_sources","tanks")]]
     gw_maps = maps[[c("other_wells","tubewells")]]
@@ -150,7 +150,7 @@ get_sw_gw_irr_frac = function(year, season, policy) {
 }
 
 seasons = c("continuous", "kharif", "rabi", "zaid")
-get_nia_gia = function(year, policy) {
+get_nia_gia <- function(year, policy) {
     maps = vector("list", 4) %>% setNames(seasons)
     for (i in 1:length(seasons)) {
         season = seasons[i]
