@@ -8,11 +8,7 @@ JULES_MOSART='/home/cenv0857/jules-mosart'
 CONFIG='config/gwm-arc-config.yml'
 configfile: CONFIG
 
-STEMS=[
-    'JULES_vn6.1_irrig_current',
-    'JULES_vn6.1_irrig',
-    'JULES_vn6.1_noirrig'
-]
+STEMS = config['jules']['id_stem']
 
 module jules_mosart:
     snakefile:
@@ -22,9 +18,9 @@ module jules_mosart:
 
 rule all:
     input:
-        'results/regrid_filenames_{stem}.txt',
-        'results/aggregate_month_filenames_{stem}.txt',
-        'results/resample_filenames_{stem}.txt'
+        expand('results/regrid_filenames_{stem}.txt', stem=STEMS),
+        expand('results/aggregate_month_filenames_{stem}.txt', stem=STEMS),
+        expand('results/resample_filenames_{stem}.txt', stem=STEMS)
 
 use rule regrid_jules_output from jules_mosart as jules_mosart_regrid_jules_output with:
     input:
@@ -36,6 +32,7 @@ use rule regrid_jules_output from jules_mosart as jules_mosart_regrid_jules_outp
 
 use rule aggregate_jules_output_month from jules_mosart as jules_mosart_aggregate_jules_output_month with:
     input:
+        regrid_filenames='results/regrid_filenames_{stem}.txt',
         script=os.path.join(
             JULES_MOSART,
             'workflow/scripts/aggregate-jules-output.py'
@@ -44,6 +41,7 @@ use rule aggregate_jules_output_month from jules_mosart as jules_mosart_aggregat
 
 use rule resample_jules_output from jules_mosart as jules_mosart_resample_jules_output with:
     input:
+        regrid_filenames='results/regrid_filenames_{stem}.txt',
         script=os.path.join(
             JULES_MOSART,
             'workflow/scripts/resample-jules-output.py'
@@ -52,7 +50,7 @@ use rule resample_jules_output from jules_mosart as jules_mosart_resample_jules_
 
 rule process_jules_output:
     input:
-        regrid_filenames='results/regrid_filenames_{stem}.txt',
+        regrid_filenames=expand('results/regrid_filenames_{stem}.txt', stem=STEMS),
         script='workflow/scripts/process-jules-output.py',
         config=CONFIG
     output:
