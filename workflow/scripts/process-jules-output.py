@@ -99,33 +99,33 @@ def main(inputfile, outputfile, config):
             irr_units = nc['irrig_water'].units
             irr_long_name = nc['irrig_water'].long_name
 
-        # # Create new netCDF4 file to store relative irrigation water use
-        # ncout = netCDF4.Dataset(nc_outputfile, 'w')
-        # ncout.createDimension('time', None)
-        # ncout.createDimension('dim0', len(dim0_values))
-        # ncout.createDimension('lat', len(lat_values))
-        # ncout.createDimension('lon', len(lon_values))
+        # Create new netCDF4 file to store relative irrigation water use
+        ncout = netCDF4.Dataset(nc_outputfile, 'w')
+        ncout.createDimension('time', None)
+        ncout.createDimension('dim0', len(dim0_values))
+        ncout.createDimension('lat', len(lat_values))
+        ncout.createDimension('lon', len(lon_values))
 
-        # var = ncout.createVariable('time', 'i4', ('time',))
-        # var.units = time_units
-        # var.calendar = time_calendar
-        # var[:] = time_values
+        var = ncout.createVariable('time', 'i4', ('time',))
+        var.units = time_units
+        var.calendar = time_calendar
+        var[:] = time_values
 
-        # var = ncout.createVariable('dim0', 'i4', ('dim0',))
-        # var[:] = dim0_values
+        var = ncout.createVariable('dim0', 'i4', ('dim0',))
+        var[:] = dim0_values
 
-        # var = ncout.createVariable('lat', np.float32, ('lat',))
-        # var.units = 'degrees_north'
-        # var[:] = lat_values
+        var = ncout.createVariable('lat', np.float32, ('lat',))
+        var.units = 'degrees_north'
+        var[:] = lat_values
 
-        # var = ncout.createVariable('lon', np.float32, ('lon',))
-        # var.units = 'degrees_east'
-        # var[:] = lon_values
+        var = ncout.createVariable('lon', np.float32, ('lon',))
+        var.units = 'degrees_east'
+        var[:] = lon_values
 
-        # var = ncout.createVariable('irrig_water', 'f8', ('time', 'dim0', 'lat', 'lon'), fill_value=F8_FILLVAL)
-        # var.standard_name = 'irrig_water'
-        # var.long_name = irr_long_name
-        # var.units = irr_units
+        var = ncout.createVariable('irrig_water', 'f8', ('time', 'dim0', 'lat', 'lon'), fill_value=F8_FILLVAL)
+        var.standard_name = 'irrig_water'
+        var.long_name = irr_long_name
+        var.units = irr_units
 
         # for index, tm in enumerate(irrig_water_time):
         #     # Retrieve the irrigation schedule for today
@@ -179,7 +179,7 @@ def main(inputfile, outputfile, config):
         #     )
         #     var[index, ...] = irrig_water_today_by_frac
 
-        # ncout.close()
+        ncout.close()
         # land.close()
         # frac.close()
         # irr_schedule.close()
