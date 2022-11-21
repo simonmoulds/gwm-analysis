@@ -8,7 +8,7 @@ JULES_MOSART='/home/cenv0857/jules-mosart'
 JULES_MOSART_CONFIG='config/gwm-jm-arc-config.yml'
 CONFIG='config/gwm-arc-config.yml'
 
-configfile: CONFIG
+configfile: JULES_MOSART_CONFIG
 
 STEMS = config['jules']['id_stem']
 
