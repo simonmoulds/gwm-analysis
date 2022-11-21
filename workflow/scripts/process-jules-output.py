@@ -26,18 +26,21 @@ F8_FILLVAL = netCDF4.default_fillvals['f8']
 @click.option('--config', default='config.yml', help='YAML configuration file')
 def main(inputfile, outputfile, config):
 
+    with open(config, 'r') as f:
+        config = yaml.load(f, Loader=yaml.FullLoader)
     ancil_datadir = config['ancil_datadir']
+
     land_fn = os.path.join(
         ancil_datadir,
-        'wfdei/ancils/WFD-EI-LandFraction2d_igp.nc'
+        'WFD-EI-LandFraction2d_igp.nc'
     )
     frac_fn = os.path.join(
         ancil_datadir,
-        'wfdei/ancils/jules_5pft_w_crops_veg_frac_2015_igp_wfdei.nc'
+        'jules_5pft_w_crops_veg_frac_2015_igp_wfdei.nc'
     )
     irr_schedule_fn = os.path.join(
         ancil_datadir,
-        '../data/wfdei/ancils/jules_5pft_w_crops_irrig_schedule.nc'
+        'jules_5pft_w_crops_irrig_schedule.nc'
     )
     irr_schedule_ref_year = 2015
 
