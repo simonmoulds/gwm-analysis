@@ -126,7 +126,7 @@ def main(inputfile, outputfile, config):
         for index, tm in enumerate(irrig_water_time):
             # Retrieve the irrigation schedule for today
 
-            if calendar.isleap(year) & (tm.month == 2) & (~calendar.isleap(irr_schedule_ref_year)):
+            if calendar.isleap(tm.year) & (tm.month == 2) & (~calendar.isleap(irr_schedule_ref_year)):
                 day = min(tm.day, 28)
             else:
                 day = tm.day
