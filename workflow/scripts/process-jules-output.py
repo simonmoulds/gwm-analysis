@@ -127,57 +127,57 @@ def main(inputfile, outputfile, config):
         var.long_name = irr_long_name
         var.units = irr_units
 
-        # for index, tm in enumerate(irrig_water_time):
-        #     # Retrieve the irrigation schedule for today
+        for index, tm in enumerate(irrig_water_time):
+            # Retrieve the irrigation schedule for today
 
-        #     if calendar.isleap(tm.year) & (tm.month == 2) & (~calendar.isleap(irr_schedule_ref_year)):
-        #         day = min(tm.day, 28)
-        #     else:
-        #         day = tm.day
+            if calendar.isleap(tm.year) & (tm.month == 2) & (~calendar.isleap(irr_schedule_ref_year)):
+                day = min(tm.day, 28)
+            else:
+                day = tm.day
 
-        #     irr_schedule_tm = datetime.datetime(
-        #         irr_schedule_ref_year,
-        #         tm.month, day, tm.hour, tm.minute
-        #     )
-        #     irr_schedule_today = irr_schedule.sel(tstep=irr_schedule_tm)
-        #     # Calculate the relative irrigated area
-        #     # among land covers irrigated today
-        #     irr_schedule_today = irr_schedule_today.values[6:10, ...]
-        #     irr_frac_today = irr_frac * irr_schedule_today
-        #     total_irr_frac_today = irr_frac_today.sum(axis=0)
-        #     rel_irr_frac_today = np.divide(
-        #         irr_frac_today,
-        #         total_irr_frac_today,
-        #         out=np.zeros_like(irr_frac),
-        #         where=total_irr_frac_today > 0
-        #     )
-        #     irrig_water_today = irrig_water.sel(time=tm)
-        #     irrig_water_today = np.nan_to_num(irrig_water_today.values)
-        #     irrig_water_today_by_frac = np.zeros(frac.shape)
-        #     irrig_water_today_by_frac[6:10,...] = (
-        #         irrig_water_today * rel_irr_frac_today
-        #     )
-        #     # # Rescale to counter any precision errors which have crept in
-        #     # irrig_water_today_sum = irrig_water_today_by_frac.sum(axis=0)
-        #     # scale_factor = np.divide(
-        #     #     irrig_water_today,
-        #     #     irrig_water_today_sum,
-        #     #     out=np.zeros_like(irrig_water_today_sum),
-        #     #     where=irrig_water_today_sum>0
-        #     # )
-        #     # irrig_water_today_by_frac *= scale_factor
-        #     # Do a check
-        #     irrig_water_today_check = irrig_water_today_by_frac.sum(axis=0)
-        #     close = np.allclose(
-        #         irrig_water_today_check[mask],
-        #         irrig_water_today[mask]
-        #     )
-        #     if not close:
-        #         raise IOError
-        #     irrig_water_today_by_frac = np.ma.array(
-        #         irrig_water_today_by_frac, mask=mask_3d
-        #     )
-        #     var[index, ...] = irrig_water_today_by_frac
+            irr_schedule_tm = datetime.datetime(
+                irr_schedule_ref_year,
+                tm.month, day, tm.hour, tm.minute
+            )
+            irr_schedule_today = irr_schedule.sel(tstep=irr_schedule_tm)
+            # Calculate the relative irrigated area
+            # among land covers irrigated today
+            irr_schedule_today = irr_schedule_today.values[6:10, ...]
+            irr_frac_today = irr_frac * irr_schedule_today
+            total_irr_frac_today = irr_frac_today.sum(axis=0)
+            rel_irr_frac_today = np.divide(
+                irr_frac_today,
+                total_irr_frac_today,
+                out=np.zeros_like(irr_frac),
+                where=total_irr_frac_today > 0
+            )
+            # irrig_water_today = irrig_water.sel(time=tm)
+            # irrig_water_today = np.nan_to_num(irrig_water_today.values)
+            # irrig_water_today_by_frac = np.zeros(frac.shape)
+            # irrig_water_today_by_frac[6:10,...] = (
+            #     irrig_water_today * rel_irr_frac_today
+            # )
+            # # # Rescale to counter any precision errors which have crept in
+            # # irrig_water_today_sum = irrig_water_today_by_frac.sum(axis=0)
+            # # scale_factor = np.divide(
+            # #     irrig_water_today,
+            # #     irrig_water_today_sum,
+            # #     out=np.zeros_like(irrig_water_today_sum),
+            # #     where=irrig_water_today_sum>0
+            # # )
+            # # irrig_water_today_by_frac *= scale_factor
+            # # Do a check
+            # irrig_water_today_check = irrig_water_today_by_frac.sum(axis=0)
+            # close = np.allclose(
+            #     irrig_water_today_check[mask],
+            #     irrig_water_today[mask]
+            # )
+            # if not close:
+            #     raise IOError
+            # irrig_water_today_by_frac = np.ma.array(
+            #     irrig_water_today_by_frac, mask=mask_3d
+            # )
+            # var[index, ...] = irrig_water_today_by_frac
 
         ncout.close()
         # land.close()
