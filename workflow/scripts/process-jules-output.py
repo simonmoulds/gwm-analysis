@@ -80,7 +80,7 @@ def main(inputfile, outputfile, config):
 
         ds = xarray.open_dataset(filepath)
         try:
-            irrig_water = ds['irrig_water']
+            irrig_water = ds['irrig_water'].load()
         except KeyError:
             continue
 
