@@ -9,6 +9,7 @@ import pandas as pd
 import datetime
 import calendar
 import click
+import tqdm
 
 # The point of this script is to disaggregate JULES
 # irrig_water output between the various irrigated
