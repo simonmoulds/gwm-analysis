@@ -89,15 +89,15 @@ def main(inputfile, outputfile, config):
             pd.Timestamp(tm).to_pydatetime() for tm in irrig_water.time.values
         ]
 
-        # # Get time dimension from output file
-        # with netCDF4.Dataset(filepath) as nc:
-        #     time_units = nc['time'].units
-        #     time_calendar = nc['time'].calendar
-        #     time_values = nc['time'][:]
-        #     lat_values = nc['lat'][:]
-        #     lon_values = nc['lon'][:]
-        #     irr_units = nc['irrig_water'].units
-        #     irr_long_name = nc['irrig_water'].long_name
+        # Get time dimension from output file
+        with netCDF4.Dataset(filepath) as nc:
+            time_units = nc['time'].units
+            time_calendar = nc['time'].calendar
+            time_values = nc['time'][:]
+            lat_values = nc['lat'][:]
+            lon_values = nc['lon'][:]
+            irr_units = nc['irrig_water'].units
+            irr_long_name = nc['irrig_water'].long_name
 
         # # Create new netCDF4 file to store relative irrigation water use
         # ncout = netCDF4.Dataset(nc_outputfile, 'w')
