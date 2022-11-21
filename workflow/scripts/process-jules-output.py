@@ -152,7 +152,7 @@ def main(inputfile, outputfile, config):
                 where=total_irr_frac_today > 0
             )
             irrig_water_today = irrig_water.sel(time=tm)
-            print(irrig_water_today)
+            print(irrig_water_today.values)
             # irrig_water_today = np.nan_to_num(irrig_water_today.values)
             # irrig_water_today_by_frac = np.zeros(frac.shape)
             # irrig_water_today_by_frac[6:10,...] = (
