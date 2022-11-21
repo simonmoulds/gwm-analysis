@@ -78,10 +78,13 @@ def main(inputfile, outputfile, config):
             filename.replace('irrig_water', 'rel_irrig_water')
         )
 
-        irrig_water = xarray.open_dataset(filepath)['irrig_water']
+        ds = xarray.open_dataset(filepath)
+        irrig_water = ds['irrig_water']
+        ds.close()
         irrig_water_time = [
             pd.Timestamp(tm).to_pydatetime() for tm in irrig_water.time.values
         ]
+
         # Get time dimension from output file
         with netCDF4.Dataset(filepath) as nc:
             time_units = nc['time'].units
