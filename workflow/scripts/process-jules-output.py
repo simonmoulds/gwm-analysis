@@ -152,11 +152,11 @@ def main(inputfile, outputfile, config):
                 where=total_irr_frac_today > 0
             )
             irrig_water_today = irrig_water.sel(time=tm)
-            # irrig_water_today = np.nan_to_num(irrig_water_today.values)
-            # irrig_water_today_by_frac = np.zeros(frac.shape)
-            # irrig_water_today_by_frac[6:10,...] = (
-            #     irrig_water_today * rel_irr_frac_today
-            # )
+            irrig_water_today = np.nan_to_num(irrig_water_today.values)
+            irrig_water_today_by_frac = np.zeros(frac.shape)
+            irrig_water_today_by_frac[6:10,...] = (
+                irrig_water_today * rel_irr_frac_today
+            )
             # # # Rescale to counter any precision errors which have crept in
             # # irrig_water_today_sum = irrig_water_today_by_frac.sum(axis=0)
             # # scale_factor = np.divide(
