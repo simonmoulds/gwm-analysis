@@ -19,8 +19,8 @@ module jules_mosart:
 rule all:
     input:
         expand('results/regrid_filenames_{stem}.txt', stem=STEMS),
-        expand('results/aggregate_month_filenames_{stem}.txt', stem=STEMS),
-        expand('results/resample_filenames_{stem}.txt', stem=STEMS),
+        # expand('results/aggregate_month_filenames_{stem}.txt', stem=STEMS),
+        # expand('results/resample_filenames_{stem}.txt', stem=STEMS),
         expand('results/relative_irrigation_filenames_{stem}.txt', stem=STEMS)
 
 use rule regrid_jules_output from jules_mosart as jules_mosart_regrid_jules_output with:
@@ -63,7 +63,7 @@ rule process_jules_output:
         mem_mb = 4000,
         partition = 'short'
     conda:
-        'gwm'
+        'jules_mosart'
     shell:
         """
         python {input.script} -i {input.regrid_filenames} -o {output} --config {input.config}
