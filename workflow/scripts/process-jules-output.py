@@ -79,7 +79,11 @@ def main(inputfile, outputfile, config):
         )
 
         ds = xarray.open_dataset(filepath)
-        irrig_water = ds['irrig_water']
+        try:
+            irrig_water = ds['irrig_water']
+        except KeyError:
+            continue
+
         ds.close()
         irrig_water_time = [
             pd.Timestamp(tm).to_pydatetime() for tm in irrig_water.time.values
