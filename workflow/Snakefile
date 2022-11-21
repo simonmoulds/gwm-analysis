@@ -13,8 +13,8 @@ configfile: JULES_MOSART_CONFIG
 STEMS = config['jules']['id_stem']
 
 module jules_mosart:
-    snakefile:
-        github("simonmoulds/jules-mosart", path="workflow/Snakefile", branch="main")
+    snakefile: github("simonmoulds/jules-mosart", path="workflow/Snakefile", branch="main")
+    config: config
 
 rule all:
     input:
