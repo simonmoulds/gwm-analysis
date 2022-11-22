@@ -80,7 +80,7 @@ rule aggregate_relative_irrigation_output_month:
     params:
         None
     resources:
-        time = '00:30:00'
+        time = '00:30:00',
         mem_mb = 4000,
         partition = 'short'
     conda:
