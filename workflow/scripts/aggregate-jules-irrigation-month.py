@@ -15,10 +15,6 @@ from tqdm import tqdm
 @click.option('--config', default='config.yml', help='YAML configuration file')
 def main(inputfile, outputfile, config):
 
-    period = period.upper()
-    if period not in ['YEAR', 'MONTH']:
-        raise ValueError('`period` must be one of month or year')
-
     with open(inputfile, 'r') as f:
         regrid_filelist = [ln.strip() for ln in f.readlines()]
 
