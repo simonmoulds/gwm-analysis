@@ -167,10 +167,11 @@ def main(inputfile, outputfile, config):
             # )
             # irrig_water_today_by_frac *= scale_factor
             # Do a check
-            irrig_water_today_check = irrig_water_today_by_frac.sum(axis=0)
+            irrig_water_today_by_frac_sum = irrig_water_today_by_frac.sum(axis=0)
+            irrig_water_today_sum = irrig_water_today.sum(axis=0)
             close = np.allclose(
-                irrig_water_today_check[mask],
-                irrig_water_today[mask]
+                irrig_water_today_by_frac_sum[mask],
+                irrig_water_today_sum[mask]
             )
             if not close:
                 raise IOError
