@@ -72,8 +72,8 @@ rule process_jules_output:
 
 rule aggregate_relative_irrigation_output_month:
     input:
-        rel_irrig_filenames='results/relative_irrigation_filenames_{stem}.txt'
-        script='workflow/scripts/aggregate-jules-irrigation-month.py'
+        rel_irrig_filenames='results/relative_irrigation_filenames_{stem}.txt',
+        script='workflow/scripts/aggregate-jules-irrigation-month.py',
         config=CONFIG
     output:
         'results/relative_irrigation_filenames_month_{stem}.txt'
