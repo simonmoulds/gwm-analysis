@@ -6,7 +6,7 @@ import numpy as np
 import xarray as xr
 import click
 from tqdm import tqdm
-from constants import OUTPUT_VARS
+# from constants import OUTPUT_VARS
 
 
 @click.command()
