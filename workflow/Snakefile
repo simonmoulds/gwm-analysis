@@ -22,7 +22,7 @@ rule all:
         # expand('results/aggregate_month_filenames_{stem}.txt', stem=STEMS),
         # expand('results/resample_filenames_{stem}.txt', stem=STEMS),
         # expand('results/relative_irrigation_filenames_{stem}.txt', stem=STEMS)
-        expand('results/relative_irrigation_filenames_month_{stem}.txt', stem=STEMS)
+        expand('results/relative_monthly_irrigation_filenames_{stem}.txt', stem=STEMS)
 
 use rule regrid_jules_output from jules_mosart as jules_mosart_regrid_jules_output with:
     input:
@@ -76,7 +76,7 @@ rule aggregate_relative_irrigation_output_month:
         script='workflow/scripts/aggregate-jules-irrigation-month.py',
         config=CONFIG
     output:
-        'results/relative_irrigation_filenames_month_{stem}.txt'
+        'results/relative_monthly_irrigation_filenames_{stem}.txt'
     params:
         None
     resources:
