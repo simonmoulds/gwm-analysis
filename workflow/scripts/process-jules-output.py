@@ -75,7 +75,7 @@ def main(inputfile, outputfile, config):
         basename = os.path.splitext(filename)[0]
         nc_outputfile = os.path.join(
             path,
-            filename.replace('irrig_water', 'rel_irrig_water')
+            filename.replace('daily_hydrology', 'rel_irrig_water')
         )
 
         ds = xarray.open_dataset(filepath)
