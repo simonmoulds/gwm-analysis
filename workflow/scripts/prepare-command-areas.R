@@ -2,32 +2,41 @@
 ## Date   : March 2021
 
 library(tidyverse)
-library(magrittr)
 library(raster)
 library(sf)
 
-DATADIR = '../data-raw/'
-OUTDIR = '../data'
+## Extract configuration info
+if (sys.nframe() == 0L) {
+  args = commandArgs(trailingOnly=TRUE)
+  config = read_yaml(args[1])
+  args = commandArgs()
+  m <- regexpr("(?<=^--file=).+", args, perl=TRUE)
+  cwd <- dirname(regmatches(args, m))
+}
 
-template = raster(xmn=60, xmx=100, ymn=20, ymx=35, nrow=30, ncol=80)
+datadir = config['irrigation_datadir']
 
 ## Command areas
-unzip(file.path(DATADIR, 'command_areas.zip'), exdir=OUTDIR)
-cmd_areas = st_read(file.path(OUTDIR, 'command_areas.shp'))
-st_write(cmd_areas, '../data/command_areas.gpkg')
-## plot(cmd_areas)
+unzip(file.path(datadir, 'command_areas.zip'), exdir=datadir)
+cmd_areas = st_read(file.path(datadir, 'command_areas.shp'))
 
 ## Command areas, raster
-unzip(file.path(DATADIR, 'lpj_com_b4_fullextent.zip'), exdir=OUTDIR)
-r = raster(file.path(OUTDIR, 'lpj_com_b4_fullextent.asc')) %>% crop(extent(template))
-writeRaster(r, "../data/command_areas.tif", overwrite=TRUE, datatype='INT2U')
+template = raster(xmn=60, xmx=100, ymn=20, ymx=35, nrow=30, ncol=80)
+unzip(file.path(datadir, 'lpj_com_b4_fullextent.zip'), exdir=datadir)
+r = raster(file.path(datadir, 'lpj_com_b4_fullextent.asc')) %>% crop(extent(template))
+writeRaster(
+  r,
+  "results/command_areas.tif",
+  overwrite=TRUE,
+  datatype='INT2U'
+)
 
 ## Reservoir points
-pts = read.table(file.path(DATADIR, 'LPJ_command_inlets_all_replacements_b.txt'), sep=",", header=TRUE)
+pts = read.table(file.path(datadir, 'LPJ_command_inlets_all_replacements_b.txt'), sep=",", header=TRUE)
 st_write(
-    st_as_sf(pts, coords=c('POINT_X','POINT_Y'), crs=4326),
-    '../data/command_inlets_0.083333Deg.gpkg',
-    append=FALSE
+  st_as_sf(pts, coords=c("POINT_X", "POINT_Y"), crs=4326),
+  "results/command_inlets_0.083333Deg.gpkg",
+  append=FALSE
 )
 
 ## @ 0.083333 degree resolution:
@@ -75,18 +84,22 @@ pts$POINT_X = floor(pts$POINT_X * 10) / 10 + 0.05
 pts$POINT_Y = floor(pts$POINT_Y * 10) / 10 + 0.05
 pts %<>% dplyr::select(LPJID, POINT_X, POINT_Y) %>% arrange(LPJID)
 
-write.table(pts, '../data/command_inlets_0.100000Deg.txt', sep=' ', row.names=FALSE)
+## write.table(
+##   pts,
+##   "results/command_inlets_0.100000Deg.txt",
+##   sep=' ', row.names=FALSE
+## )
 
 pts = st_as_sf(pts, coords=c('POINT_X','POINT_Y'), crs=4326)
 st_write(
-    pts,
-    '../data/command_inlets_0.100000Deg.gpkg',
-    append=FALSE
+  pts,
+  'results/command_inlets_0.100000Deg.gpkg',
+  append=FALSE
 )
 
-## Rivers
-riv = raster("../data/merit_accum_cell_igp_0.100000Deg.tif")
-v = getValues(riv)
-v[v<25] = NA
-riv[] = v
-writeRaster(riv, "../data/merit_accum_cell_igp_filtered_0.100000Deg.tif", overwrite=TRUE, datatype='INT4U')
+## ## Rivers
+## riv = raster("../data/merit_accum_cell_igp_0.100000Deg.tif")
+## v = getValues(riv)
+## v[v<25] = NA
+## riv[] = v
+## writeRaster(riv, "../data/merit_accum_cell_igp_filtered_0.100000Deg.tif", overwrite=TRUE, datatype='INT4U')
