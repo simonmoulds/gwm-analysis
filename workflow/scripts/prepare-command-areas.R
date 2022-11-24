@@ -16,6 +16,7 @@ if (sys.nframe() == 0L) {
 }
 
 datadir = config['irrigation_datadir']
+print(datadir)
 
 ## Command areas
 unzip(file.path(datadir, 'command_areas.zip'), exdir=datadir)
