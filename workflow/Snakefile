@@ -95,7 +95,7 @@ rule aggregate_relative_irrigation_output_month:
 
 rule prepare_command_areas:
     input:
-        script='workflow/scripts/prepare-command-areas.R'
+        script='workflow/scripts/prepare-command-areas.R',
         config=CONFIG
     output:
         'results/command_areas.tif',
