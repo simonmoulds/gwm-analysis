@@ -169,6 +169,8 @@ def main(inputfile, outputfile, config):
             # Do a check
             irrig_water_today_by_frac_sum = irrig_water_today_by_frac.sum(axis=0)
             irrig_water_today_sum = irrig_water_today.sum(axis=0)
+            print(irrig_water_today_by_frac_sum.shape)
+            print(irrig_water_today_sum.shape)
             close = np.allclose(
                 irrig_water_today_by_frac_sum[mask],
                 irrig_water_today_sum[mask]

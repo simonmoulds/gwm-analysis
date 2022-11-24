@@ -18,9 +18,9 @@ module jules_mosart:
 
 rule all:
     input:
-        expand('results/regrid_filenames_{stem}.txt', stem=STEMS),
-        expand('results/aggregate_month_filenames_{stem}.txt', stem=STEMS),
-        expand('results/resample_filenames_{stem}.txt', stem=STEMS),
+        # expand('results/regrid_filenames_{stem}.txt', stem=STEMS),
+        # expand('results/aggregate_month_filenames_{stem}.txt', stem=STEMS),
+        # expand('results/resample_filenames_{stem}.txt', stem=STEMS),
         expand('results/relative_irrigation_filenames_{stem}.txt', stem=STEMS)
         # expand('results/relative_monthly_irrigation_filenames_{stem}.txt', stem=STEMS)
 
