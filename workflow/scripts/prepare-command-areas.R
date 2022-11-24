@@ -15,8 +15,7 @@ if (sys.nframe() == 0L) {
   cwd <- dirname(regmatches(args, m))
 }
 
-datadir = config['irrigation_datadir']
-print(datadir)
+datadir = config$irrigation_datadir
 
 ## Command areas
 unzip(file.path(datadir, 'command_areas.zip'), exdir=datadir)
