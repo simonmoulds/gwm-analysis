@@ -4,6 +4,7 @@
 library(tidyverse)
 library(raster)
 library(sf)
+library(yaml)
 
 ## Extract configuration info
 if (sys.nframe() == 0L) {
