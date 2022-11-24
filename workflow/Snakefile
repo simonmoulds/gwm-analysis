@@ -111,7 +111,7 @@ rule prepare_command_areas:
         'jules_mosart'
     shell:
         """
-        python {input.script} --config {input.config}
+        Rscript {input.script} --config {input.config}
         """
 
 # rule make_irrig_policy:
