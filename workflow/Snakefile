@@ -111,6 +111,7 @@ rule prepare_command_areas:
         'jules_mosart'
     shell:
         """
+        export R_LIBS_USER=/home/cenv0857/local/rlibs
         Rscript {input.script} {input.config}
         """
 
