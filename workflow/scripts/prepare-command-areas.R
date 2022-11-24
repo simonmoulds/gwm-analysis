@@ -6,6 +6,9 @@ library(raster)
 library(sf)
 library(yaml)
 
+sessionInfo()
+print(.libPaths())
+
 ## Extract configuration info
 if (sys.nframe() == 0L) {
   args = commandArgs(trailingOnly=TRUE)
