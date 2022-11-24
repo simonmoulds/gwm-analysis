@@ -108,7 +108,7 @@ rule prepare_command_areas:
         mem_mb=4000,
         partition='short'
     conda:
-        'jules-mosart'
+        'jules_mosart'
     shell:
         """
         python {input.script} --config {input.config}
