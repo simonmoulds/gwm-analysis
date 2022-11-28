@@ -35,16 +35,14 @@ library(dplyr)
 ## Extract configuration info
 if (sys.nframe() == 0L) {
   args = commandArgs(trailingOnly=TRUE)
-  outputdir = args[1]
+  inputdir = args[1]
+  outputdir = args[2]
   ## args = commandArgs()
   ## m <- regexpr("(?<=^--file=).+", args, perl=TRUE)
   ## cwd <- dirname(regmatches(args, m))
 }
-
-if (!dir.exists(outputdir))
-  dir.create(outputdir, recursive = TRUE)
-
-resourcedir = 'resources'
+## if (!dir.exists(outputdir))
+##   dir.create(outputdir, recursive = TRUE)
 
 ## TODO increase
 ## For now use a scale factor of 0.75
@@ -62,7 +60,8 @@ irrigation_source_maps = list()
 for (i in 1:length(irrigation_sources)) {
   source = irrigation_sources[i]
   fn = file.path(
-    resourcedir, 'irrigated_area_maps',
+    inputdir,
+    ## resourcedir, 'irrigated_area_maps',
     paste0("icrisat_kharif_", source, "_", reference_year, "_india_0.500000Deg.tif")
   )
   irrigation_source_maps[[source]] = raster(fn)
