@@ -14,13 +14,16 @@ library(dplyr)
 ## Extract configuration info
 if (sys.nframe() == 0L) {
   args = commandArgs(trailingOnly=TRUE)
-  outputdir = args[1]
+  inputdir = args[1]
+  outputdir = args[2]
   args = commandArgs()
   m <- regexpr("(?<=^--file=).+", args, perl=TRUE)
   cwd <- dirname(regmatches(args, m))
 }
 ## Load custom utilities
 source(file.path(cwd, "utils.R"))
+
+jules_output_dir <- file.path(inputdir, "jules-output/u-ci496")
 
 ## Create output directory if it does not exist
 if (!dir.exists(outputdir))
@@ -43,7 +46,6 @@ reference_year = 2010
 
 ## TODO put these in config
 ## JULES simulation details
-jules_output_dir = "../jules-output/u-ci496"
 ## *_irrig         : historical irrigated area
 ## *_irrig_current : current irrigated area
 ## *_noirrig       : no irrigation
