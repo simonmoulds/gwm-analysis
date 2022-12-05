@@ -81,6 +81,7 @@ command_areas = st_read(
 pakistan_ids = c(1,2,3,4,5,8,9,10,11,12,13,14,16,20,37,41)
 india_command_areas = command_areas %>% filter(!ID %in% pakistan_ids)
 
+print("Hello, world!")
 india_frac = raster(file.path(inputdir, "india_frac_0.500000Deg.tif"))
 print("india_frac exists!")
 wfdei_frac = raster(file.path(inputdir, "WFD-EI-LandFraction2d_IGP.tif"))
