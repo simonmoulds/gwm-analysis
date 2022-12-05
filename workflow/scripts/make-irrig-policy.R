@@ -64,6 +64,7 @@ for (i in 1:length(irrigation_sources)) {
   source = irrigation_sources[i]
   fn = file.path(
     inputdir,
+    "irrigated_area_maps",
     paste0("icrisat_kharif_", source, "_", reference_year, "_india_0.500000Deg.tif")
   )
   irrigation_source_maps[[source]] = raster(fn)
@@ -81,11 +82,8 @@ command_areas = st_read(
 pakistan_ids = c(1,2,3,4,5,8,9,10,11,12,13,14,16,20,37,41)
 india_command_areas = command_areas %>% filter(!ID %in% pakistan_ids)
 
-print("Hello, world!")
 india_frac = raster(file.path(inputdir, "india_frac_0.500000Deg.tif"))
-print("india_frac exists!")
 wfdei_frac = raster(file.path(inputdir, "WFD-EI-LandFraction2d_IGP.tif"))
-print("wfdei_frac exists!")
 india_canal_frac = raster(wfdei_frac)
 india_canal_frac[wfdei_frac] = 0
 
@@ -152,7 +150,6 @@ reference_map = raster(
     paste0("icrisat_kharif_canal_2010_india_0.500000Deg.tif")
   )
 )
-print("icrisat_kharif_canal_2010 exists!")
 
 ## Write current policy map
 writeRaster(
@@ -252,7 +249,6 @@ for (i in 1:length(irrigation_sources)) {
         inputdir, "irrigated_area_maps",
         paste0("icrisat_", season, "_", source, "_", reference_year, "_india_0.500000Deg.tif")
       )
-      print(paste0("icrisat_", season, "_", source, "_", reference_year, " exists!"))
       fn1 = file.path(
         outputdir,
         paste0("icrisat_", season, "_", source, "_", reference_year, "_india_0.500000Deg_", policy, ".tif")
