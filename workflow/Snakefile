@@ -23,10 +23,10 @@ rule all:
         # expand('results/resample_filenames_{stem}.txt', stem=STEMS),
         # expand('results/relative_irrigation_filenames_{stem}.txt', stem=STEMS)
         # expand('results/relative_monthly_irrigation_filenames_{stem}.txt', stem=STEMS)
-        'results/command_areas.tif',
-        'results/command_inlets_0.083333Deg.gpkg',
-        'results/command_inlets_0.100000Deg.gpkg'
-        # 'results/irrigation_policy_maps'
+        # 'results/command_areas.tif',
+        # 'results/command_inlets_0.083333Deg.gpkg',
+        # 'results/command_inlets_0.100000Deg.gpkg'
+        'results/irrigation_policy_maps'
 
 use rule regrid_jules_output from jules_mosart as jules_mosart_regrid_jules_output with:
     input:
@@ -116,7 +116,7 @@ rule prepare_command_areas:
 
 rule make_irrig_policy:
     input:
-        irrigation_map_dir='/data/ouce-drift/cenv0857/ganges_water_machine_data/irrigated_area_maps',
+        inputdir='/data/ouce-drift/cenv0857/ganges_water_machine_data',
         land_frac='/data/ouce-drift/cenv0857/ganges_water_machine_data/WFD-EI-LandFraction2d_IGP.tif',
         india_frac='/data/ouce-drift/cenv0857/ganges_water_machine_data/india_frac_0.500000Deg.tif',
         script='workflow/scripts/make-irrig-policy.R',
@@ -131,7 +131,7 @@ rule make_irrig_policy:
         partition = 'short'
     shell:
         """
-        Rscript {input.script} {input.irrigation_map_dir} {input.land_frac} {input.india_frac} {output}
+        Rscript {input.script} {input.inputdir} {input.land_frac} {input.india_frac} {output}
         """
 
 # rule compute_water_balance:
