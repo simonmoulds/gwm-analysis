@@ -35,10 +35,10 @@ library(dplyr)
 ## Extract configuration info
 if (sys.nframe() == 0L) {
   args = commandArgs(trailingOnly=TRUE)
-  inputdir = args[1]
-  landfrac = args[2]
-  indiafrac = args[3]
-  outputdir = args[4]
+  ## inputdir = args[1]
+  landfrac = args[1]
+  indiafrac = args[2]
+  outputdir = args[3]
   ## args = commandArgs()
   ## m <- regexpr("(?<=^--file=).+", args, perl=TRUE)
   ## cwd <- dirname(regmatches(args, m))
@@ -63,8 +63,7 @@ irrigation_source_maps = list()
 for (i in 1:length(irrigation_sources)) {
   source = irrigation_sources[i]
   fn = file.path(
-    inputdir,
-    "irrigated_area_maps",
+    "resources/irrigated_area_maps",
     paste0("icrisat_kharif_", source, "_", reference_year, "_india_0.500000Deg.tif")
   )
   irrigation_source_maps[[source]] = raster(fn)
@@ -76,14 +75,12 @@ irrigation_source_maps = stack(irrigation_source_maps)
 ## India command areas
 ## ################################### ##
 
-command_areas = st_read(
-  file.path(inputdir, "irrigation", "command_areas.shp")
-)
+command_areas = st_read("resources/irrigation/command_areas.shp")
 pakistan_ids = c(1,2,3,4,5,8,9,10,11,12,13,14,16,20,37,41)
 india_command_areas = command_areas %>% filter(!ID %in% pakistan_ids)
 
-india_frac = raster(file.path(inputdir, "india_frac_0.500000Deg.tif"))
-wfdei_frac = raster(file.path(inputdir, "WFD-EI-LandFraction2d_IGP.tif"))
+india_frac = raster("resources/india_frac_0.500000Deg.tif")
+wfdei_frac = raster("resources/WFD-EI-LandFraction2d_IGP.tif")
 india_canal_frac = raster(wfdei_frac)
 india_canal_frac[wfdei_frac] = 0
 
@@ -146,7 +143,7 @@ for (i in 1:length(command_area_ids)) {
 ## to increase capacity by more than others
 reference_map = raster(
   file.path(
-    inputdir, "irrigated_area_maps",
+    "resources/irrigated_area_maps",
     paste0("icrisat_kharif_canal_2010_india_0.500000Deg.tif")
   )
 )
@@ -246,7 +243,7 @@ for (i in 1:length(irrigation_sources)) {
   for (policy in c("current_canal", "restored_canal")) {
     for (season in c("rabi", "zaid", "continuous")) {
       fn0 = file.path(
-        inputdir, "irrigated_area_maps",
+        "resources/irrigated_area_maps",
         paste0("icrisat_", season, "_", source, "_", reference_year, "_india_0.500000Deg.tif")
       )
       fn1 = file.path(

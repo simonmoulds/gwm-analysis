@@ -24,37 +24,25 @@ if (sys.nframe() == 0L) {
 ## Load custom utilities
 source(file.path(cwd, "utils.R"))
 
-jules_output_dir <- file.path(inputdir, "jules-output/u-ci496")
-
-## Create output directory if it does not exist
-if (!dir.exists(outputdir))
-  dir.create(outputdir, recursive = TRUE)
-
 ## Irrgation sources
 irrigation_sources = c(
   "canal", "other_sources", "other_wells", "tanks", "tubewells"
 )
 
-## TODO put these in config
 ## Policies, reference year for policies
 policies = c("historical", "current_canal", "restored_canal")
 for (policy in policies) {
-  dir.create(file.path(outputdir, policy), showWarnings = FALSE)
+  dir.create(file.path(outputdir, policy), recursive=TRUE, showWarnings = FALSE)
 }
 
 ## TODO this has been referred to before - put in config
 reference_year = 2010
 
-## TODO put these in config
 ## JULES simulation details
 ## *_irrig         : historical irrigated area
 ## *_irrig_current : current irrigated area
 ## *_noirrig       : no irrigation
-## id_stems = c(
-##   "JULES_vn6.1_irrig",
-##   "JULES_vn6.1_irrig_current",
-##   "JULES_vn6.1_noirrig"
-## )
+## TODO put these in config
 ## job_name = "jules_%s"
 ## profile_name = "daily_hydrology"
 start_year = 1979
@@ -88,7 +76,7 @@ year_months = 11:22 # Nov-Oct (year+1)
 
 ## Pixels belonging to Indo-Gangetic Plain (Indus + Ganges)
 land_frac = raster(
-    file.path("../data/wfdei/ancils/WFD-EI-LandFraction2d_igp.nc")
+  file.path("resources/wfdei/ancils/WFD-EI-LandFraction2d_igp.nc")
 )
 
 for (i in 1:length(seasons)) {
@@ -109,6 +97,9 @@ for (i in 1:length(seasons)) {
 ## Start analysis by policy/year
 for (m in 1:length(policies)) { # historical, current_canal, restored_canal
   policy = policies[m]
+  if (!dir.exists(file.path(outputdir, policy))) {
+
+  }
   sprintf("Computing values for %s policy...", policy)
   pb = txtProgressBar(min = 0, max = length(years) - 1, initial = 0)
   for (k in 1:(length(years) - 1)) {
@@ -299,7 +290,6 @@ for (m in 1:length(policies)) { # historical, current_canal, restored_canal
       file.path(outputdir, policy, fn),
       overwrite = TRUE
     )
-    ## }
     setTxtProgressBar(pb, k)
   }
   close(pb)
