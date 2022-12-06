@@ -79,7 +79,8 @@ def main(inputfile, outputfile, outputdir, config):
         filename = os.path.split(filepath)[1]
         basename = os.path.splitext(filename)[0]
         nc_outputfile = os.path.join(
-            path,
+            outputdir,
+            # path,
             filename.replace('daily_hydrology', 'rel_irrig_water')
         )
 

@@ -10,10 +10,11 @@ from tqdm import tqdm
 
 
 @click.command()
-@click.option('-i', '--inputfile', default='.', help='Name of input file')
-@click.option('-o', '--outputfile', default='.', help='Name of output file')
+@click.option('--inputfile', help='Name of output file')
+@click.option('--outputfile', help='Name of output file')
+@click.option('--outputdir', default='.', help='Destination of output files')
 @click.option('--config', default='config.yml', help='YAML configuration file')
-def main(inputfile, outputfile, config):
+def main(inputfile, outputfile, outputdir, config):
 
     with open(inputfile, 'r') as f:
         regrid_filelist = [ln.strip() for ln in f.readlines()]
@@ -27,7 +28,7 @@ def main(inputfile, outputfile, config):
         # Check whether I need to do this again
         # Convert from mass to depth kg m-2 s-1 -> m d-1
         x['irrig_water'] = x['irrig_water'] * 60 * 60 * 24 / 1000
-        nc_outputfile = os.path.join(path, basename + '.month.nc')
+        nc_outputfile = os.path.join(outputdir, basename + '.month.nc')
         x_aggr = x.groupby("time.month").sum(dim="time") # m d-1 -> m month-1
         x_aggr.to_netcdf(nc_outputfile)
         x.close()
