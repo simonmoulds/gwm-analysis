@@ -25,7 +25,7 @@ rule all:
         expand('results/relative_monthly_irrigation_filenames_{stem}.txt', stem=STEMS),
         'results/command_areas.tif',
         'results/command_inlets_0.083333Deg.gpkg',
-        'results/command_inlets_0.100000Deg.gpkg'
+        'results/command_inlets_0.100000Deg.gpkg',
         'results/irrigation_policy_maps'
 
 use rule regrid_jules_output from jules_mosart as jules_mosart_regrid_jules_output with:
