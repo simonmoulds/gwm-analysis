@@ -21,12 +21,12 @@ rule all:
         # expand('results/regrid_filenames_{stem}.txt', stem=STEMS),
         # expand('results/aggregate_month_filenames_{stem}.txt', stem=STEMS),
         # expand('results/resample_filenames_{stem}.txt', stem=STEMS),
-        # expand('results/relative_irrigation_filenames_{stem}.txt', stem=STEMS)
+        expand('results/relative_irrigation_filenames_{stem}.txt', stem=STEMS)
         # expand('results/relative_monthly_irrigation_filenames_{stem}.txt', stem=STEMS)
         # 'results/command_areas.tif',
         # 'results/command_inlets_0.083333Deg.gpkg',
         # 'results/command_inlets_0.100000Deg.gpkg'
-        'results/irrigation_policy_maps'
+        # 'results/irrigation_policy_maps'
 
 use rule regrid_jules_output from jules_mosart as jules_mosart_regrid_jules_output with:
     input:
@@ -60,7 +60,8 @@ rule process_jules_output:
         script='workflow/scripts/process-jules-output.py',
         config=CONFIG
     output:
-        'results/relative_irrigation_filenames_{stem}.txt'
+        outputfile='results/relative_irrigation_filenames_{stem}.txt',
+        outputdir='results/{stem}'
     params:
         None
     resources:
@@ -71,85 +72,87 @@ rule process_jules_output:
         'jules_mosart'
     shell:
         """
-        python {input.script} -i {input.regrid_filenames} -o {output} --config {input.config}
+        python {input.script} --inputfile {input.regrid_filenames} --outputfile {output.outputfile} --outputdir {output.outputdir} --config {input.config}
         """
 
-rule aggregate_relative_irrigation_output_month:
-    input:
-        rel_irrig_filenames='results/relative_irrigation_filenames_{stem}.txt',
-        script='workflow/scripts/aggregate-jules-irrigation-month.py',
-        config=CONFIG
-    output:
-        'results/relative_monthly_irrigation_filenames_{stem}.txt'
-    params:
-        None
-    resources:
-        time='00:30:00',
-        mem_mb=4000,
-        partition='short'
-    conda:
-        'jules_mosart'
-    shell:
-        """
-        python {input.script} -i {input.rel_irrig_filenames} -o {output} --config {input.config}
-        """
+# rule aggregate_relative_irrigation_output_month:
+#     input:
+#         rel_irrig_filenames='results/relative_irrigation_filenames_{stem}.txt',
+#         script='workflow/scripts/aggregate-jules-irrigation-month.py',
+#         config=CONFIG
+#     output:
+#         'results/relative_monthly_irrigation_filenames_{stem}.txt'
+#     params:
+#         None
+#     resources:
+#         time='00:30:00',
+#         mem_mb=4000,
+#         partition='short'
+#     conda:
+#         'jules_mosart'
+#     shell:
+#         """
+#         python {input.script} -i {input.rel_irrig_filenames} -o {output} --config {input.config}
+#         """
 
-rule prepare_command_areas:
-    input:
-        script='workflow/scripts/prepare-command-areas.R',
-        config=CONFIG
-    output:
-        'results/command_areas.tif',
-        'results/command_inlets_0.083333Deg.gpkg',
-        'results/command_inlets_0.100000Deg.gpkg'
-    params:
-        None
-    resources:
-        time='00:30:00',
-        mem_mb=4000,
-        partition='short'
-    shell:
-        """
-        export R_LIBS_USER=/home/cenv0857/local/rlibs
-        Rscript {input.script} {input.config}
-        """
+# rule prepare_command_areas:
+#     input:
+#         script='workflow/scripts/prepare-command-areas.R',
+#         config=CONFIG
+#     output:
+#         'results/command_areas.tif',
+#         'results/command_inlets_0.083333Deg.gpkg',
+#         'results/command_inlets_0.100000Deg.gpkg'
+#     params:
+#         None
+#     resources:
+#         time='00:30:00',
+#         mem_mb=4000,
+#         partition='short'
+#     shell:
+#         """
+#         export R_LIBS_USER=/home/cenv0857/local/rlibs
+#         Rscript {input.script} {input.config}
+#         """
 
-rule make_irrig_policy:
-    input:
-        inputdir='/data/ouce-drift/cenv0857/ganges_water_machine_data',
-        land_frac='/data/ouce-drift/cenv0857/ganges_water_machine_data/WFD-EI-LandFraction2d_IGP.tif',
-        india_frac='/data/ouce-drift/cenv0857/ganges_water_machine_data/india_frac_0.500000Deg.tif',
-        script='workflow/scripts/make-irrig-policy.R',
-        config=CONFIG
-    output:
-        directory('results/irrigation_policy_maps')
-    params:
-        None
-    resources:
-        time = '00:30:00',
-        mem_mb = 4000,
-        partition = 'short'
-    shell:
-        """
-        Rscript {input.script} {input.inputdir} {input.land_frac} {input.india_frac} {output}
-        """
+# rule make_irrig_policy:
+#     input:
+#         inputdir='/data/ouce-drift/cenv0857/ganges_water_machine_data',
+#         land_frac='/data/ouce-drift/cenv0857/ganges_water_machine_data/WFD-EI-LandFraction2d_IGP.tif',
+#         india_frac='/data/ouce-drift/cenv0857/ganges_water_machine_data/india_frac_0.500000Deg.tif',
+#         script='workflow/scripts/make-irrig-policy.R',
+#         config=CONFIG
+#     output:
+#         directory('results/irrigation_policy_maps')
+#     params:
+#         None
+#     resources:
+#         time = '00:30:00',
+#         mem_mb = 4000,
+#         partition = 'short'
+#     shell:
+#         """
+#         Rscript {input.script} {input.inputdir} {input.land_frac} {input.india_frac} {output}
+#         """
 
-rule compute_water_balance:
-    input:
-        inputdir='/data/ouce-drift/cenv0857/ganges_water_machine_data',
-        script='workflow/scripts/compute-water-balance.R'
-    output:
-        directory('results/analysis')
-    params:
-        None
-    resources:
-        time = '00:30:00',
-        mem_mb = 4000,
-        partition = 'short'
-    shell:
-        """
-        Rscript {input.script} {input.inputdir} {output}
-        """
+# rule compute_water_balance:
+#     input:
+#         'results/irrigation_policy_maps',
+#         expand('results/relative_irrigation_filenames_{stem}.txt', stem=STEMS),
+#         inputdir='/data/ouce-drift/cenv0857/ganges_water_machine_data',
+#         script='workflow/scripts/compute-water-balance.R'
+#     output:
+#         directory('results/analysis/{stem}')
+#     params:
+#         None
+#     resources:
+#         time = '00:30:00',
+#         mem_mb = 4000,
+#         partition = 'short'
+#     shell:
+#         """
+#         Rscript {input.script} {input.inputdir} {wildcards.stem} {output}
+#         """
 
 # rule select_gleam_data:
 #     input:

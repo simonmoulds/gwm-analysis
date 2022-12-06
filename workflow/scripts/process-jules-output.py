@@ -23,11 +23,16 @@ from tqdm import tqdm
 F8_FILLVAL = netCDF4.default_fillvals['f8']
 
 @click.command()
-@click.option('-i', '--inputfile', default='.', help='Name of output file')
-@click.option('-o', '--outputfile', default='.', help='Name of output file')
+@click.option('--inputfile', help='Name of output file')
+@click.option('--outputfile', help='Name of output file')
+@click.option('--outputdir', default='.', help='Destination of output files')
 @click.option('--config', default='config.yml', help='YAML configuration file')
-def main(inputfile, outputfile, config):
+def main(inputfile, outputfile, outputdir, config):
 
+    # Make output directory if it doesn't already exist
+    os.makedirs(outputdir, exist_ok=True)
+
+    # Retrieve JULES ancillary inputs that we need
     with open(config, 'r') as f:
         config = yaml.load(f, Loader=yaml.FullLoader)
     ancil_datadir = config['ancil_datadir']
