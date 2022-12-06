@@ -22,7 +22,7 @@ rule all:
         # expand('results/aggregate_month_filenames_{stem}.txt', stem=STEMS),
         # expand('results/resample_filenames_{stem}.txt', stem=STEMS),
         expand('results/relative_irrigation_filenames_{stem}.txt', stem=STEMS),
-        expand('results/{stem}', stem=STEMS)
+        # expand('results/{stem}', stem=STEMS)
         # expand('results/relative_monthly_irrigation_filenames_{stem}.txt', stem=STEMS)
         # 'results/command_areas.tif',
         # 'results/command_inlets_0.083333Deg.gpkg',
