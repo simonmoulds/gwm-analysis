@@ -27,7 +27,7 @@ rule all:
         # 'results/command_inlets_0.083333Deg.gpkg',
         # 'results/command_inlets_0.100000Deg.gpkg',
         'results/irrigation_policy_maps',
-        'results/compute_water_balance.txt'
+        'results/compute_water_balance_{stem}.txt'
 
 use rule regrid_jules_output from jules_mosart as jules_mosart_regrid_jules_output with:
     input:
@@ -140,7 +140,7 @@ rule compute_water_balance:
         inputdir='/data/ouce-drift/cenv0857/ganges_water_machine_data',
         script='workflow/scripts/compute-water-balance.R'
     output:
-        'results/compute_water_balance.txt'
+        'results/compute_water_balance_{stem}.txt'
     params:
         outputdir='results/{stem}'
     resources:
@@ -150,7 +150,7 @@ rule compute_water_balance:
     shell:
         """
         Rscript {input.script} {input.inputdir} {wildcards.stem} {output}
-        touch results/compute_water_balance.txt
+        touch results/compute_water_balance_{wildcards.stem}.txt
         """
 
 # rule select_gleam_data:
