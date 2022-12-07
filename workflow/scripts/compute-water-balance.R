@@ -97,9 +97,6 @@ for (i in 1:length(seasons)) {
 ## Start analysis by policy/year
 for (m in 1:length(policies)) { # historical, current_canal, restored_canal
   policy = policies[m]
-  if (!dir.exists(file.path(outputdir, policy))) {
-
-  }
   sprintf("Computing values for %s policy...", policy)
   pb = txtProgressBar(min = 0, max = length(years) - 1, initial = 0)
   for (k in 1:(length(years) - 1)) {

@@ -20,7 +20,7 @@ jules:
   pft_dim_name: dim1
 
 regrid_jules_output:
-  output_directory: /data/ouce-drift/cenv0857/ganges_water_machine_data/jules-output/u-ci496
+  output_directory: results/JULES_output
   file_suffix: 2D
 
 resample_jules_output:
