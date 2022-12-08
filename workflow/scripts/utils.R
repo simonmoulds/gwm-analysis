@@ -347,87 +347,86 @@ load_jules_output <- function(datadir, id_stem, policy, yr, ...) {
   )
 }
 
-## ## NOT CURRENTLY USED:
-## compute_target_canal_area <- function(year_str = "[0-9]{4}",
-##                                       f_leakage = 0.15,
-##                                       ...) {
-##   ## Recharge
-##   fs <- list.files(
-##     "../data/analysis/current_canal",
-##     pattern = paste0("recharge_current_canal_", year_str, "_current.tif"),
-##     full.names = TRUE
-##   )
-##   if (length(fs) > 1) {
-##     recharge <- stackApply(stack(fs), indices = rep(1, length(fs)), fun = mean)
-##   } else if (length(fs) == 1) {
-##     recharge <- raster(fs[1])
-##   }
-##   ## Abstraction
-##   fs <- list.files(
-##     "../data/analysis/current_canal",
-##     pattern = paste0("abstraction_current_canal_", year_str, "_current.tif"),
-##     full.names = TRUE
-##   )
-##   ## abstraction <- stackApply(stack(fs), indices = rep(1, length(fs)), fun = mean)
-##   if (length(fs) > 1) {
-##     abstraction <- stackApply(stack(fs), indices = rep(1, length(fs)), fun = mean)
-##   } else if (length(fs) == 1) {
-##     abstraction <- raster(fs[1])
-##   }
-##   ## GW irrigation
-##   fs <- list.files(
-##     "../data/analysis/current_canal",
-##     pattern = paste0("rabi_gw_irrigation_current_canal_", year_str, "_current.tif"),
-##     full.names = TRUE
-##   )
-##   ## rabi_gw_irrigation <- stackApply(stack(fs), indices = rep(1, length(fs)), fun = mean)
-##   if (length(fs) > 1) {
-##     rabi_gw_irrigation <- stackApply(stack(fs), indices = rep(1, length(fs)), fun = mean)
-##   } else if (length(fs) == 1) {
-##     rabi_gw_irrigation <- raster(fs[1])
-##   }
-##   fs <- list.files(
-##     "../data/analysis/current_canal",
-##     pattern = paste0("zaid_gw_irrigation_current_canal_", year_str, "_current.tif"),
-##     full.names = TRUE
-##   )
-##   ## zaid_gw_irrigation <- stackApply(stack(fs), indices = rep(1, length(fs)), fun = mean)
-##   if (length(fs) > 1) {
-##     zaid_gw_irrigation <- stackApply(stack(fs), indices = rep(1, length(fs)), fun = mean)
-##   } else if (length(fs) == 1) {
-##     zaid_gw_irrigation <- raster(fs[1])
-##   }
-##   fs <- list.files(
-##     "../data/analysis/current_canal",
-##     pattern = paste0("continuous_gw_irrigation_current_canal_", year_str, "_current.tif"),
-##     full.names = TRUE
-##   )
-##   ## continuous_gw_irrigation <- stackApply(stack(fs), indices = rep(1, length(fs)), fun = mean)
-##   if (length(fs) > 1) {
-##     continuous_gw_irrigation <- stackApply(stack(fs), indices = rep(1, length(fs)), fun = mean)
-##   } else if (length(fs) == 1) {
-##     continuous_gw_irrigation <- raster(fs[1])
-##   }
-##   fs <- list.files(
-##     "../data/analysis/current_canal",
-##     pattern = paste0("kharif_total_irrigation_current_canal_", year_str, "_current.tif"),
-##     full.names = TRUE
-##   )
-##   ## kharif_total_irrigation <- stackApply(stack(fs), indices = rep(1, length(fs)), fun = mean)
-##   if (length(fs) > 1) {
-##     kharif_total_irrigation <- stackApply(stack(fs), indices = rep(1, length(fs)), fun = mean)
-##   } else if (length(fs) == 1) {
-##     kharif_total_irrigation <- raster(fs[1])
-##   }
-##   f_kharif_gw <- (
-##     (recharge - rabi_gw_irrigation - zaid_gw_irrigation - continuous_gw_irrigation + f_leakage * kharif_total_irrigation)
-##     / (kharif_total_irrigation + f_leakage * kharif_total_irrigation)
-##   )
-##   f_kharif_gw[f_kharif_gw < 0] <- 0
-##   f_kharif_gw[f_kharif_gw > 1] <- 1
-##   f_kharif_sw <- 1 - f_kharif_gw
-##   list(sw=f_kharif_sw, gw=f_kharif_gw)
-## }
+compute_target_canal_area <- function(year_str = "[0-9]{4}",
+                                      f_leakage = 0.15,
+                                      ...) {
+  ## Recharge
+  fs <- list.files(
+    "../data/analysis/current_canal",
+    pattern = paste0("recharge_current_canal_", year_str, "_current.tif"),
+    full.names = TRUE
+  )
+  if (length(fs) > 1) {
+    recharge <- stackApply(stack(fs), indices = rep(1, length(fs)), fun = mean)
+  } else if (length(fs) == 1) {
+    recharge <- raster(fs[1])
+  }
+  ## Abstraction
+  fs <- list.files(
+    "../data/analysis/current_canal",
+    pattern = paste0("abstraction_current_canal_", year_str, "_current.tif"),
+    full.names = TRUE
+  )
+  ## abstraction <- stackApply(stack(fs), indices = rep(1, length(fs)), fun = mean)
+  if (length(fs) > 1) {
+    abstraction <- stackApply(stack(fs), indices = rep(1, length(fs)), fun = mean)
+  } else if (length(fs) == 1) {
+    abstraction <- raster(fs[1])
+  }
+  ## GW irrigation
+  fs <- list.files(
+    "../data/analysis/current_canal",
+    pattern = paste0("rabi_gw_irrigation_current_canal_", year_str, "_current.tif"),
+    full.names = TRUE
+  )
+  ## rabi_gw_irrigation <- stackApply(stack(fs), indices = rep(1, length(fs)), fun = mean)
+  if (length(fs) > 1) {
+    rabi_gw_irrigation <- stackApply(stack(fs), indices = rep(1, length(fs)), fun = mean)
+  } else if (length(fs) == 1) {
+    rabi_gw_irrigation <- raster(fs[1])
+  }
+  fs <- list.files(
+    "../data/analysis/current_canal",
+    pattern = paste0("zaid_gw_irrigation_current_canal_", year_str, "_current.tif"),
+    full.names = TRUE
+  )
+  ## zaid_gw_irrigation <- stackApply(stack(fs), indices = rep(1, length(fs)), fun = mean)
+  if (length(fs) > 1) {
+    zaid_gw_irrigation <- stackApply(stack(fs), indices = rep(1, length(fs)), fun = mean)
+  } else if (length(fs) == 1) {
+    zaid_gw_irrigation <- raster(fs[1])
+  }
+  fs <- list.files(
+    "../data/analysis/current_canal",
+    pattern = paste0("continuous_gw_irrigation_current_canal_", year_str, "_current.tif"),
+    full.names = TRUE
+  )
+  ## continuous_gw_irrigation <- stackApply(stack(fs), indices = rep(1, length(fs)), fun = mean)
+  if (length(fs) > 1) {
+    continuous_gw_irrigation <- stackApply(stack(fs), indices = rep(1, length(fs)), fun = mean)
+  } else if (length(fs) == 1) {
+    continuous_gw_irrigation <- raster(fs[1])
+  }
+  fs <- list.files(
+    "../data/analysis/current_canal",
+    pattern = paste0("kharif_total_irrigation_current_canal_", year_str, "_current.tif"),
+    full.names = TRUE
+  )
+  ## kharif_total_irrigation <- stackApply(stack(fs), indices = rep(1, length(fs)), fun = mean)
+  if (length(fs) > 1) {
+    kharif_total_irrigation <- stackApply(stack(fs), indices = rep(1, length(fs)), fun = mean)
+  } else if (length(fs) == 1) {
+    kharif_total_irrigation <- raster(fs[1])
+  }
+  f_kharif_gw <- (
+    (recharge - rabi_gw_irrigation - zaid_gw_irrigation - continuous_gw_irrigation + f_leakage * kharif_total_irrigation)
+    / (kharif_total_irrigation + f_leakage * kharif_total_irrigation)
+  )
+  f_kharif_gw[f_kharif_gw < 0] <- 0
+  f_kharif_gw[f_kharif_gw > 1] <- 1
+  f_kharif_sw <- 1 - f_kharif_gw
+  list(sw=f_kharif_sw, gw=f_kharif_gw)
+}
 
 ## ## Precipitation
 ## fs <- list.files(

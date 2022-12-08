@@ -290,13 +290,13 @@ for (m in 1:length(policies)) { # historical, current_canal, restored_canal
     setTxtProgressBar(pb, k)
   }
   close(pb)
-  ## `current_canal` and `restored_canal` policies are
-  ## computed on the basis of the previous output
-  if (policies[m] == "historical") {
-    compute_current_canal_policy(inputdir)
-  } else if (policies[m] == "current_canal") {
-    compute_restored_canal_policy(inputdir)
-  }
+  ## ## `current_canal` and `restored_canal` policies are
+  ## ## computed on the basis of the previous output
+  ## if (policies[m] == "historical") {
+  ##   compute_current_canal_policy(inputdir)
+  ## } else if (policies[m] == "current_canal") {
+  ##   compute_restored_canal_policy(inputdir)
+  ## }
 }
 
 
