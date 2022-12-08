@@ -116,7 +116,7 @@ for (m in 1:length(policies)) { # historical, current_canal, restored_canal
     ## ############################# ##
     ## Annual total irrigation       ##
     ## ############################# ##
-    suffix = sub("(JULES)_(vn.*)_([a-z]+)", "\\3", id_stems[i])
+    suffix = sub("(JULES)_(vn.*)_([a-z]+)", "\\3", stem) #id_stems[i])
     annual_total_irrigation = stackApply(
       stack(total_irrig_water),
       indices=rep(1, 12),
