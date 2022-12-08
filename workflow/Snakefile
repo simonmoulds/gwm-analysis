@@ -149,7 +149,6 @@ rule compute_water_balance:
     shell:
         """
         Rscript {input.script} {wildcards.stem} {params.outputdir}
-        touch results/compute_water_balance_{wildcards.stem}.txt
         """
 
 # rule select_gleam_data:

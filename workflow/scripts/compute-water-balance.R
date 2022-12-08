@@ -304,7 +304,7 @@ for (m in 1:length(policies)) { # historical, current_canal, restored_canal
   }
 }
 
-
+file.create(sprintf("results/compute_water_balance_%s.txt", stem))
 
 
 
