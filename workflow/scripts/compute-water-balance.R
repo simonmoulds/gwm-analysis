@@ -14,9 +14,9 @@ library(dplyr)
 ## Extract configuration info
 if (sys.nframe() == 0L) {
   args = commandArgs(trailingOnly=TRUE)
-  inputdir = args[1]
-  stem = args[2]
-  outputdir = args[3]
+  ## inputdir = args[1]
+  stem = args[1]
+  outputdir = args[2]
   args = commandArgs()
   m <- regexpr("(?<=^--file=).+", args, perl=TRUE)
   cwd <- dirname(regmatches(args, m))
@@ -295,13 +295,13 @@ for (m in 1:length(policies)) { # historical, current_canal, restored_canal
     setTxtProgressBar(pb, k)
   }
   close(pb)
-  ## ## `current_canal` and `restored_canal` policies are
-  ## ## computed on the basis of the previous output
-  ## if (policies[m] == "historical") {
-  ##   compute_current_canal_policy(inputdir)
-  ## } else if (policies[m] == "current_canal") {
-  ##   compute_restored_canal_policy(inputdir)
-  ## }
+  ## `current_canal` and `restored_canal` policies are
+  ## computed on the basis of the previous output
+  if (policies[m] == "historical") {
+    compute_current_canal_policy(file.path(outputdir, policy))
+  } else if (policies[m] == "current_canal") {
+    compute_restored_canal_policy(file.path(outputdir, policy))
+  }
 }
 
 
