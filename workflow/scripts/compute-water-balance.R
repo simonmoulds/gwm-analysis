@@ -101,9 +101,14 @@ for (m in 1:length(policies)) { # historical, current_canal, restored_canal
   pb = txtProgressBar(min = 0, max = length(years) - 1, initial = 0)
   for (k in 1:(length(years) - 1)) {
     yr = years[k]
+
     ## for (i in 1:length(id_stems)) {
     ## jules_output <- load_jules_output(id_stems[i], policy, yr)
+
+    print(paste0(policies[m], " / ", yr))
     jules_output <- load_jules_output("results/JULES_output", stem, policy, yr)
+    print("Successfully loaded JULES output!")
+
     precip <- jules_output$precip
     surf_roff <- jules_output$surf_roff
     sub_surf_roff <- jules_output$sub_surf_roff
