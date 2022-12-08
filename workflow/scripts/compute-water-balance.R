@@ -92,7 +92,7 @@ for (i in 1:length(seasons)) {
 
 ## ## TESTING:
 ## policies = c("historical")
-## years = 1998
+years = 1995:2000
 ## id_stems = c("JULES_vn6.1_irrig")
 ## Start analysis by policy/year
 for (m in 1:length(policies)) { # historical, current_canal, restored_canal
