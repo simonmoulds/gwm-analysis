@@ -133,25 +133,25 @@ rule make_irrig_policy:
         Rscript {input.script} {input.land_frac} {input.india_frac} {output}
         """
 
-# rule compute_water_balance:
-#     input:
-#         'results/irrigation_policy_maps',
-#         expand('results/relative_irrigation_filenames_{stem}.txt', stem=STEMS),
-#         inputdir='/data/ouce-drift/cenv0857/ganges_water_machine_data',
-#         script='workflow/scripts/compute-water-balance.R'
-#     output:
-#         'results/compute_water_balance_{stem}.txt'
-#     params:
-#         outputdir='results/{stem}'
-#     resources:
-#         time = '00:30:00',
-#         mem_mb = 4000,
-#         partition = 'short'
-#     shell:
-#         """
-#         Rscript {input.script} {input.inputdir} {wildcards.stem} {params.outputdir}
-#         touch results/compute_water_balance_{wildcards.stem}.txt
-#         """
+rule compute_water_balance:
+    input:
+        'results/irrigation_policy_maps',
+        expand('results/relative_irrigation_filenames_{stem}.txt', stem=STEMS),
+        inputdir='/data/ouce-drift/cenv0857/ganges_water_machine_data',
+        script='workflow/scripts/compute-water-balance.R'
+    output:
+        'results/compute_water_balance_{stem}.txt'
+    params:
+        outputdir='results/{stem}'
+    resources:
+        time = '00:30:00',
+        mem_mb = 4000,
+        partition = 'short'
+    shell:
+        """
+        Rscript {input.script} {input.inputdir} {wildcards.stem} {params.outputdir}
+        touch results/compute_water_balance_{wildcards.stem}.txt
+        """
 
 # rule select_gleam_data:
 #     input:

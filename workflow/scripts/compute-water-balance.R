@@ -103,7 +103,7 @@ for (m in 1:length(policies)) { # historical, current_canal, restored_canal
     yr = years[k]
     ## for (i in 1:length(id_stems)) {
     ## jules_output <- load_jules_output(id_stems[i], policy, yr)
-    jules_output <- load_jules_output(stem, policy, yr)
+    jules_output <- load_jules_output("results/JULES_output", stem, policy, yr)
     precip <- jules_output$precip
     surf_roff <- jules_output$surf_roff
     sub_surf_roff <- jules_output$sub_surf_roff

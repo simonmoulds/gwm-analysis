@@ -1,7 +1,7 @@
 ## Author : Simon Moulds
 ## Date   : October 2021
 
-get_jules_month_data <- function(year, month, varname, id_stem, job_name, profile_name) {
+get_jules_month_data <- function(datadir, year, month, varname, id_stem, job_name, profile_name) {
     if (month > 12) {
         month = month - 12
         year_offset = 1
@@ -15,7 +15,7 @@ get_jules_month_data <- function(year, month, varname, id_stem, job_name, profil
         ".", year + year_offset,
         ".2D.month.nc"
     )
-    jules = nc_open(file.path(jules_output_dir, fn))
+    jules = nc_open(file.path(datadir, fn))
     var = ncvar_get(jules, varname, start=c(1,1,month), count=c(80,40,1))
     var = aperm(var, c(2,1))
     var = var[rev(seq_len(nrow(var))),]
@@ -24,7 +24,7 @@ get_jules_month_data <- function(year, month, varname, id_stem, job_name, profil
     r    
 }
 
-get_jules_month_irrig_rel_data <- function(year, month, varname, id_stem, job_name, profile_name) {
+get_jules_month_irrig_rel_data <- function(datadir, year, month, varname, id_stem, job_name, profile_name) {
     if (month > 12) {
         month = month - 12
         year_offset = 1
@@ -39,8 +39,8 @@ get_jules_month_irrig_rel_data <- function(year, month, varname, id_stem, job_na
         ".", year + year_offset,
         ".2D.month.nc"
     )
-    if (file.exists(file.path(jules_output_dir, fn))) {
-        jules = nc_open(file.path(jules_output_dir, fn))
+    if (file.exists(file.path(datadir, fn))) {
+        jules = nc_open(file.path(datadir, fn))
         var = ncvar_get(jules, varname, start=c(1,1,1,month), count=c(80,40,15,1))
         var = aperm(var, c(3,2,1))
         var = var[,rev(seq_len(dim(var)[2])),]
@@ -58,24 +58,24 @@ get_jules_month_irrig_rel_data <- function(year, month, varname, id_stem, job_na
     st
 }
 
-get_jules_jjas_data <- function(year, varname) {
-    maps = list()    
-    for (i in 1:4) {
-        ## +5 so we start at June
-        maps[[i]] = get_jules_month_data(year, i+5, varname)
-    }
-    sm = stackApply(stack(maps), indices=rep(1, 4), fun=sum)
-    sm
-}
+## get_jules_jjas_data <- function(datadir, year, varname) {
+##     maps = list()
+##     for (i in 1:4) {
+##         ## +5 so we start at June
+##         maps[[i]] = get_jules_month_data(datadir, year, i+5, varname)
+##     }
+##     sm = stackApply(stack(maps), indices=rep(1, 4), fun=sum)
+##     sm
+## }
 
-get_jules_year_data <- function(year, month, varname) {
-    maps = list()
-    for (i in 1:12) {
-        maps[[i]] = get_jules_month_data(year, i, varname)
-    }
-    sm = stackApply(stack(maps), indices=rep(1, 12), fun=sum)
-    sm
-}
+## get_jules_year_data <- function(datadir, year, month, varname) {
+##     maps = list()
+##     for (i in 1:12) {
+##         maps[[i]] = get_jules_month_data(datadir, year, i, varname)
+##     }
+##     sm = stackApply(stack(maps), indices=rep(1, 12), fun=sum)
+##     sm
+## }
 
 get_irr_frac <- function(year, season, policy="current_canal") {
     if (policy %in% policies) {
@@ -169,7 +169,7 @@ get_nia_gia <- function(year, policy) {
 }
 
 ## TODO put these functions in utils.R
-load_jules_output <- function(id_stem, policy, yr, ...) {
+load_jules_output <- function(datadir, id_stem, policy, yr, ...) {
 
   ## FIXME - make these arguments to function
   job_name = "jules_%s"
@@ -213,32 +213,32 @@ load_jules_output <- function(id_stem, policy, yr, ...) {
     month = year_months[j]
     ## Precipitation
     precip[[j]] = get_jules_month_data(
-      yr, month, "precip", id_stem, job_name, profile_name
+      datadir, yr, month, "precip", id_stem, job_name, profile_name
     )
     ## Runoff
     sub_surf_roff[[j]] = get_jules_month_data(
-        yr, month, "sub_surf_roff", id_stem, job_name, profile_name
+        datadir, yr, month, "sub_surf_roff", id_stem, job_name, profile_name
     )
     surf_roff[[j]] = get_jules_month_data(
-        yr, month, "surf_roff", id_stem, job_name, profile_name
+        datadir, yr, month, "surf_roff", id_stem, job_name, profile_name
     )
     ## Evaporation
     esoil = get_jules_month_data(
-        yr, month, "esoil_gb", id_stem, job_name, profile_name
+        datadir, yr, month, "esoil_gb", id_stem, job_name, profile_name
     )
     ecan = get_jules_month_data(
-        yr, month, "ecan_gb", id_stem, job_name, profile_name
+        datadir, yr, month, "ecan_gb", id_stem, job_name, profile_name
     )
     elake = get_jules_month_data(
-        yr, month, "elake", id_stem, job_name, profile_name
+        datadir, yr, month, "elake", id_stem, job_name, profile_name
     )
     et[[j]] = esoil + ecan + elake
     ## Irrigation
     irrig_water = get_jules_month_irrig_rel_data(
-        yr, month, "irrig_water", id_stem, job_name, profile_name
+        datadir, yr, month, "irrig_water", id_stem, job_name, profile_name
     )
     irrig_water_reference = get_jules_month_data(
-        yr, month, "irrig_water", id_stem, job_name, profile_name
+        datadir, yr, month, "irrig_water", id_stem, job_name, profile_name
     )
     irrig_water_total = stackApply(
         irrig_water,
