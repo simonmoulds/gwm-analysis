@@ -143,7 +143,7 @@ rule compute_water_balance:
     params:
         outputdir='results/{stem}'
     resources:
-        time = '00:30:00',
+        time = '06:00:00',
         mem_mb = 4000,
         partition = 'short'
     shell:
