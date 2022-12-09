@@ -1,13 +1,13 @@
 #!/usr/bin/env bash
-#SBATCH --partition=medium
+#SBATCH --partition=short
 #SBATCH -o slurm-%j.out
 #SBATCH -e slurm-%j.out
 #SBATCH --mail-type=END,FAIL
 #SBATCH --mail-user=simon.moulds@ouce.ox.ac.uk
-#SBATCH --nodes=2
-#SBATCH --ntasks-per-node=48
+#SBATCH --nodes=1
+#SBATCH --ntasks-per-node=12
 #SBATCH --job-name=esmvaltool
-#SBATCH --time=24:00:00
+#SBATCH --time=12:00:00
 
 # cd $SCRATCH || exit 1
 
