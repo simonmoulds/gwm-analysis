@@ -92,7 +92,7 @@ for (i in 1:length(seasons)) {
 
 ## ## TESTING:
 ## policies = c("historical")
-years = 1995:2000
+## years = 1995:2000
 ## id_stems = c("JULES_vn6.1_irrig")
 ## Start analysis by policy/year
 for (m in 1:length(policies)) { # historical, current_canal, restored_canal
@@ -105,9 +105,9 @@ for (m in 1:length(policies)) { # historical, current_canal, restored_canal
     ## for (i in 1:length(id_stems)) {
     ## jules_output <- load_jules_output(id_stems[i], policy, yr)
 
-    print(paste0(policies[m], " / ", yr))
+    ## print(paste0(policies[m], " / ", yr))
     jules_output <- load_jules_output("results/JULES_output", stem, policy, yr)
-    print("Successfully loaded JULES output!")
+    ## print("Successfully loaded JULES output!")
 
     precip <- jules_output$precip
     surf_roff <- jules_output$surf_roff
