@@ -18,7 +18,7 @@ source activate $DATA/envs/snakemake
 # PYTHONPATH sometimes causes issues
 export PYTHONPATH=
 
-snakemake --profile $HOME/.config/snakemake/slurm.arc --cores 1 --use-conda --conda-basepath $DATA --rerun-incomplete
+snakemake --profile $HOME/.config/snakemake/slurm.arc --cores 1 --use-conda --conda-base-path $DATA --rerun-incomplete
 
 # smcmd="snakemake --profile $HOME/.config/snakemake/slurm.arc $@"
 # cpu=1
