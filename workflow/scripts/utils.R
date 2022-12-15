@@ -793,7 +793,8 @@ summarise_water_balance <- function(stem, policy, years, outputdir) {
     )
     writeRaster(
       annual_total_irrigation,
-      file.path(outputdir, policy, fn),
+      ## file.path(outputdir, policy, fn),
+      file.path(outputdir, fn),
       overwrite = TRUE
     )
 
@@ -810,7 +811,8 @@ summarise_water_balance <- function(stem, policy, years, outputdir) {
     )
     writeRaster(
       annual_gw_irrigation,
-      file.path(outputdir, policy, fn),
+      ## file.path(outputdir, policy, fn),
+      file.path(outputdir, fn),
       overwrite = TRUE
     )
 
@@ -827,7 +829,8 @@ summarise_water_balance <- function(stem, policy, years, outputdir) {
     )
     writeRaster(
       annual_sw_irrigation,
-      file.path(outputdir, policy, fn),
+      ## file.path(outputdir, policy, fn),
+      file.path(outputdir, fn),
       overwrite = TRUE
     )
 
@@ -848,7 +851,8 @@ summarise_water_balance <- function(stem, policy, years, outputdir) {
         )
         writeRaster(
           season_irrigation,
-          file.path(outputdir, policy, fn),
+          ## file.path(outputdir, policy, fn),
+          file.path(outputdir, fn),
           overwrite=TRUE
         )
       }
@@ -871,7 +875,8 @@ summarise_water_balance <- function(stem, policy, years, outputdir) {
         )
         writeRaster(
           month_irrigation,
-          file.path(outputdir, policy, fn),
+          ## file.path(outputdir, policy, fn),
+          file.path(outputdir, fn),
           overwrite = TRUE
         )
       }
@@ -884,7 +889,8 @@ summarise_water_balance <- function(stem, policy, years, outputdir) {
     fn <- paste0("annual_et_", policy, "_", yr, "_", suffix, ".tif")
     writeRaster(
       annual_et,
-      file.path(outputdir, policy, fn),
+      ## file.path(outputdir, policy, fn),
+      file.path(outputdir, fn),
       overwrite = TRUE
     )
 
@@ -895,7 +901,8 @@ summarise_water_balance <- function(stem, policy, years, outputdir) {
     fn <- paste0("annual_precip_", policy, "_", yr, "_", suffix, ".tif")
     writeRaster(
       annual_precip,
-      file.path(outputdir, policy, fn),
+      ## file.path(outputdir, policy, fn),
+      file.path(outputdir, fn),
       overwrite = TRUE
     )
 
@@ -906,7 +913,8 @@ summarise_water_balance <- function(stem, policy, years, outputdir) {
     fn <- paste0("annual_surf_roff_", policy, "_", yr, "_", suffix, ".tif")
     writeRaster(
       annual_surf_roff,
-      file.path(outputdir, policy, fn),
+      ## file.path(outputdir, policy, fn),
+      file.path(outputdir, fn),
       overwrite = TRUE
     )
 
@@ -917,7 +925,8 @@ summarise_water_balance <- function(stem, policy, years, outputdir) {
     fn <- paste0("annual_sub_surf_roff_", policy, "_", yr, "_", suffix, ".tif")
     writeRaster(
       annual_sub_surf_roff,
-      file.path(outputdir, policy, fn),
+      ## file.path(outputdir, policy, fn),
+      file.path(outputdir, fn),
       overwrite = TRUE
     )
 
@@ -928,7 +937,8 @@ summarise_water_balance <- function(stem, policy, years, outputdir) {
     fn <- paste0("recharge_", policy, "_", yr, "_", suffix, ".tif")
     writeRaster(
       Qin,
-      file.path(outputdir, policy, fn),
+      ## file.path(outputdir, policy, fn),
+      file.path(outputdir, fn),
       overwrite = TRUE
     )
 
@@ -939,7 +949,8 @@ summarise_water_balance <- function(stem, policy, years, outputdir) {
     fn <- paste0("abstraction_", policy, "_", yr, "_", suffix, ".tif")
     writeRaster(
       Qout,
-      file.path(outputdir, policy, fn),
+      ## file.path(outputdir, policy, fn),
+      file.path(outputdir, fn),
       overwrite = TRUE
     )
 
@@ -950,7 +961,8 @@ summarise_water_balance <- function(stem, policy, years, outputdir) {
     fn <- paste0("dS", policy, "_", yr, "_", suffix, ".tif")
     writeRaster(
       dS,
-      file.path(outputdir, policy, fn),
+      ## file.path(outputdir, policy, fn),
+      file.path(outputdir, fn),
       overwrite = TRUE
     )
     setTxtProgressBar(pb, k)
