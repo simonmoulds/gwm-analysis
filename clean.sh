@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-module load Anaconda3/2020.11
+module load Anaconda3/2022.05
 # module load NCO/5.0.1-foss-2021a
 source activate $DATA/envs/snakemake
 
@@ -17,4 +17,3 @@ select yn in "None" "Logs and snakemake lock" "Logs only" "Lock only"; do
     esac
 done
 
-# snakemake --profile $HOME/.config/snakemake/slurm.arc --cores 1 --use-conda --conda-base-path $DATA --unlock

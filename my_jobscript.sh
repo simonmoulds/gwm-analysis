@@ -11,7 +11,7 @@
 
 # cd $SCRATCH || exit 1
 
-module load Anaconda3/2020.11
+module load Anaconda3/2022.05
 module load NCO/5.0.1-foss-2021a
 source activate $DATA/envs/snakemake
 
