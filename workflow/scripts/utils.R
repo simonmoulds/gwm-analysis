@@ -78,30 +78,32 @@ get_jules_month_irrig_rel_data <- function(datadir, year, month, varname, id_ste
 ## }
 
 get_irr_frac <- function(year, season, policy="current_canal") {
-    if (policy %in% policies) {
-        if (policy == "historical") {
-            suffix = ".tif"
-        } else {            
-            suffix = paste0("_", policy, ".tif")
-        }        
+  if (policy %in% policies) {
+    if (policy == "historical") {
+      suffix = ".tif"
+      mapdir <- "resources/irrigated_area_maps"
     } else {
-        msg = paste0("Policy ", policy, " not recognised!")
-        stop(msg)
-    }    
-    maps = list()
-    for (i in 1:length(irrigation_sources)) {
-        source = irrigation_sources[i]
-        fn = file.path(
-            "resources/irrigated_area_maps/",
-            paste0(
-                "icrisat_", season, "_", source, "_",
-                year, "_india_0.500000Deg", suffix
-            )
-        )
-        maps[[source]] = raster(fn)
+      suffix = paste0("_", policy, ".tif")
+      mapdir <- "results/irrigated_area_maps"
     }
-    maps = stack(maps)
-    maps
+  } else {
+    msg = paste0("Policy ", policy, " not recognised!")
+    stop(msg)
+  }
+  maps = list()
+  for (i in 1:length(irrigation_sources)) {
+    source = irrigation_sources[i]
+    fn = file.path(
+      mapdir,
+      paste0(
+        "icrisat_", season, "_", source, "_",
+        year, "_india_0.500000Deg", suffix
+      )
+    )
+    maps[[source]] = raster(fn)
+  }
+  maps = stack(maps)
+  maps
 }
 
 ## get_irr_frac2 = function(year, season, policy) {
@@ -478,7 +480,8 @@ compute_restored_canal_policy <- function(datadir, ...) {
   ## FIXME shouldn't be writing to irrigated_area_maps
   get_filename <- function(source) {
     fn <- sprintf("icrisat_kharif_%s_2010_india_0.500000Deg_restored_canal.tif", source)
-    return(file.path("resources/irrigated_area_maps", fn))
+    ## return(file.path("resources/irrigated_area_maps", fn))
+    return(file.path(datadir, fn))
   }
   writeRaster(canal_irrigated_area, get_filename("canal"), overwrite = TRUE)
   writeRaster(other_sources_irrigated_area, get_filename("other_sources"), overwrite = TRUE)
@@ -508,7 +511,8 @@ compute_restored_canal_policy <- function(datadir, ...) {
   tubewell_irrigated_area <- total_irrigated_area - canal_irrigated_area
   get_filename <- function(source) {
     fn <- sprintf("icrisat_rabi_%s_2010_india_0.500000Deg_restored_canal.tif", source)
-    return(file.path("resources/irrigated_area_maps", fn))
+    ## return(file.path("resources/irrigated_area_maps", fn))
+    return(file.path(datadir, fn))
   }
   writeRaster(canal_irrigated_area, get_filename("canal"), overwrite = TRUE)
   writeRaster(other_sources_irrigated_area, get_filename("other_sources"), overwrite = TRUE)
@@ -530,7 +534,8 @@ compute_restored_canal_policy <- function(datadir, ...) {
   tubewell_irrigated_area <- total_irrigated_area - canal_irrigated_area
   get_filename <- function(source) {
     fn <- sprintf("icrisat_zaid_%s_2010_india_0.500000Deg_restored_canal.tif", source)
-    return(file.path("resources/irrigated_area_maps", fn))
+    ## return(file.path("resources/irrigated_area_maps", fn))
+    return(file.path(datadir, fn))
   }
   writeRaster(canal_irrigated_area, get_filename("canal"), overwrite = TRUE)
   writeRaster(other_sources_irrigated_area, get_filename("other_sources"), overwrite = TRUE)
@@ -552,7 +557,8 @@ compute_restored_canal_policy <- function(datadir, ...) {
   tubewell_irrigated_area <- total_irrigated_area - canal_irrigated_area
   get_filename <- function(source) {
     fn <- sprintf("icrisat_continuous_%s_2010_india_0.500000Deg_restored_canal.tif", source)
-    return(file.path("resources/irrigated_area_maps", fn))
+    ## return(file.path("resources/irrigated_area_maps", fn))
+    return(file.path(datadir, fn))
   }
   writeRaster(canal_irrigated_area, get_filename("canal"), overwrite = TRUE)
   writeRaster(other_sources_irrigated_area, get_filename("other_sources"), overwrite = TRUE)
@@ -591,7 +597,8 @@ compute_current_canal_policy <- function(datadir, ...) {
   tubewell_irrigated_area <- total_irrigated_area - canal_irrigated_area
   get_filename <- function(source) {
     fn <- sprintf("icrisat_kharif_%s_2010_india_0.500000Deg_current_canal.tif", source)
-    return(file.path("resources/irrigated_area_maps", fn))
+    ## return(file.path("resources/irrigated_area_maps", fn))
+    return(file.path(datadir, fn))
   }
   writeRaster(
     canal_irrigated_area,
@@ -639,7 +646,8 @@ compute_current_canal_policy <- function(datadir, ...) {
   tubewell_irrigated_area <- total_irrigated_area - canal_irrigated_area
   get_filename <- function(source) {
     fn <- sprintf("icrisat_rabi_%s_2010_india_0.500000Deg_current_canal.tif", source)
-    return(file.path("resources/irrigated_area_maps", fn))
+    ## return(file.path("resources/irrigated_area_maps", fn))
+    return(file.path(datadir, fn))
   }
   writeRaster(
     canal_irrigated_area,
@@ -681,7 +689,8 @@ compute_current_canal_policy <- function(datadir, ...) {
   tubewell_irrigated_area <- total_irrigated_area - canal_irrigated_area
   get_filename <- function(source) {
     fn <- sprintf("icrisat_zaid_%s_2010_india_0.500000Deg_current_canal.tif", source)
-    return(file.path("resources/irrigated_area_maps", fn))
+    ## return(file.path("resources/irrigated_area_maps", fn))
+    return(file.path(datadir, fn))
   }
   writeRaster(
     canal_irrigated_area,
@@ -723,7 +732,8 @@ compute_current_canal_policy <- function(datadir, ...) {
   tubewell_irrigated_area <- total_irrigated_area - canal_irrigated_area
   get_filename <- function(source) {
     fn <- sprintf("icrisat_continuous_%s_2010_india_0.500000Deg_current_canal.tif", source)
-    return(file.path("resources/irrigated_area_maps", fn))
+    ## return(file.path("resources/irrigated_area_maps", fn))
+    return(file.path(datadir, fn))
   }
   writeRaster(
     canal_irrigated_area,
@@ -750,4 +760,200 @@ compute_current_canal_policy <- function(datadir, ...) {
     get_filename("tubewells"),
     overwrite = TRUE
   )
+}
+
+summarise_water_balance <- function(stem, policy, years, outputdir) {
+
+  pb = txtProgressBar(min = 0, max = length(years) - 1, initial = 0)
+  for (k in 1:(length(years) - 1)) {
+    yr = years[k]
+
+    ## Load JULES output
+    jules_output <- load_jules_output("results/JULES_output", stem, policy, yr)
+    precip <- jules_output$precip
+    surf_roff <- jules_output$surf_roff
+    sub_surf_roff <- jules_output$sub_surf_roff
+    et <- jules_output$et
+    gw_irrig_water <- jules_output$gw_irrig_water
+    sw_irrig_water <- jules_output$sw_irrig_water
+    total_irrig_water <- jules_output$total_irrig_water
+    season_irrig_maps <- jules_output$season_irrig_maps
+
+    ## ############################# ##
+    ## Annual total irrigation       ##
+    ## ############################# ##
+    suffix = sub("(JULES)_(vn.*)_([a-z]+)", "\\3", stem) #id_stems[i])
+    annual_total_irrigation = stackApply(
+      stack(total_irrig_water),
+      indices=rep(1, 12),
+      fun=sum
+    )
+    fn <- paste0(
+      "annual_total_irrigation_", policy, "_", yr, "_", suffix, ".tif"
+    )
+    writeRaster(
+      annual_total_irrigation,
+      file.path(outputdir, policy, fn),
+      overwrite = TRUE
+    )
+
+    ## ############################# ##
+    ## Annual gw irrigation
+    ## ############################# ##
+    annual_gw_irrigation = stackApply(
+      stack(gw_irrig_water),
+      indices=rep(1, 12),
+      fun=sum
+    )
+    fn <- paste0(
+      "annual_gw_irrigation_", policy, "_", yr, "_", suffix, ".tif"
+    )
+    writeRaster(
+      annual_gw_irrigation,
+      file.path(outputdir, policy, fn),
+      overwrite = TRUE
+    )
+
+    ## ############################# ##
+    ## Annual sw irrigation
+    ## ############################# ##
+    annual_sw_irrigation = stackApply(
+      stack(sw_irrig_water),
+      indices=rep(1, 12),
+      fun=sum
+    )
+    fn <- paste0(
+      "annual_sw_irrigation_", policy, "_", yr, "_", suffix, ".tif"
+    )
+    writeRaster(
+      annual_sw_irrigation,
+      file.path(outputdir, policy, fn),
+      overwrite = TRUE
+    )
+
+    ## ############################# ##
+    ## Monthly and season-wise totals
+    ## ############################# ##
+    for (j in 1:length(seasons)) {
+      season = seasons[j]
+      for (type in c("total", "gw", "sw")) {
+        season_irrigation = stackApply(
+          stack(season_irrig_maps[[season]][[type]]),
+          indices=rep(1, 12),
+          fun=sum
+        )
+        fn <- paste0(
+          season, "_", type, "_irrigation_",
+          policy, "_", yr, "_", suffix, ".tif"
+        )
+        writeRaster(
+          season_irrigation,
+          file.path(outputdir, policy, fn),
+          overwrite=TRUE
+        )
+      }
+    }
+    for (j in 1:12) {
+      month = year_months[j]
+      for (type in c("total", "gw", "sw")) {
+        maps = stack(
+          lapply(seasons, FUN=function(season)
+            season_irrig_maps[[season]][[type]][[j]])
+        )
+        month_irrigation = stackApply(
+          maps,
+          indices=rep(1, length(seasons)),
+          fun=sum
+        )
+        fn <- paste0(
+          type, "_irrigation_", policy, "_", yr, "_",
+          formatC(month, width=2, flag=0), "_", suffix, ".tif"
+        )
+        writeRaster(
+          month_irrigation,
+          file.path(outputdir, policy, fn),
+          overwrite = TRUE
+        )
+      }
+    }
+
+    ## ############################# ##
+    ## Annual ET
+    ## ############################# ##
+    annual_et = stackApply(stack(et), indices=rep(1, 12), fun=sum)
+    fn <- paste0("annual_et_", policy, "_", yr, "_", suffix, ".tif")
+    writeRaster(
+      annual_et,
+      file.path(outputdir, policy, fn),
+      overwrite = TRUE
+    )
+
+    ## ############################# ##
+    ## Annual precip
+    ## ############################# ##
+    annual_precip = stackApply(stack(precip), indices=rep(1, 12), fun=sum)
+    fn <- paste0("annual_precip_", policy, "_", yr, "_", suffix, ".tif")
+    writeRaster(
+      annual_precip,
+      file.path(outputdir, policy, fn),
+      overwrite = TRUE
+    )
+
+    ## ############################# ##
+    ## Annual surface runoff
+    ## ############################# ##
+    annual_surf_roff = stackApply(stack(surf_roff), indices=rep(1, 12), fun=sum)
+    fn <- paste0("annual_surf_roff_", policy, "_", yr, "_", suffix, ".tif")
+    writeRaster(
+      annual_surf_roff,
+      file.path(outputdir, policy, fn),
+      overwrite = TRUE
+    )
+
+    ## ############################# ##
+    ## Annual subsurface runoff
+    ## ############################# ##
+    annual_sub_surf_roff = stackApply(stack(sub_surf_roff), indices=rep(1, 12), fun=sum)
+    fn <- paste0("annual_sub_surf_roff_", policy, "_", yr, "_", suffix, ".tif")
+    writeRaster(
+      annual_sub_surf_roff,
+      file.path(outputdir, policy, fn),
+      overwrite = TRUE
+    )
+
+    ## ############################# ##
+    ## Recharge
+    ## ############################# ##
+    Qin = stackApply(stack(sub_surf_roff), indices=rep(1, 12), fun=sum)
+    fn <- paste0("recharge_", policy, "_", yr, "_", suffix, ".tif")
+    writeRaster(
+      Qin,
+      file.path(outputdir, policy, fn),
+      overwrite = TRUE
+    )
+
+    ## ############################# ##
+    ## Abstraction
+    ## ############################# ##
+    Qout = stackApply(stack(gw_irrig_water), indices=rep(1, 12), fun=sum)
+    fn <- paste0("abstraction_", policy, "_", yr, "_", suffix, ".tif")
+    writeRaster(
+      Qout,
+      file.path(outputdir, policy, fn),
+      overwrite = TRUE
+    )
+
+    ## ############################# ##
+    ## Change in storage
+    ## ############################# ##
+    dS = Qin - Qout
+    fn <- paste0("dS", policy, "_", yr, "_", suffix, ".tif")
+    writeRaster(
+      dS,
+      file.path(outputdir, policy, fn),
+      overwrite = TRUE
+    )
+    setTxtProgressBar(pb, k)
+  }
+  close(pb)
 }

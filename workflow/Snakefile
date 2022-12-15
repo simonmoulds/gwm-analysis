@@ -109,6 +109,8 @@ rule prepare_command_areas:
         time='00:30:00',
         mem_mb=4000,
         partition='short'
+    conda:
+        'jules_mosart'
     shell:
         """
         export R_LIBS_USER=/home/cenv0857/local/rlibs
@@ -128,6 +130,8 @@ rule make_irrig_policy:
         time = '00:30:00',
         mem_mb = 4000,
         partition = 'short'
+    conda:
+        'jules_mosart'
     shell:
         """
         Rscript {input.script} {input.land_frac} {input.india_frac} {output}
@@ -146,6 +150,8 @@ rule compute_water_balance:
         time = '06:00:00',
         mem_mb = 4000,
         partition = 'short'
+    conda:
+        'jules_mosart'
     shell:
         """
         Rscript {input.script} {wildcards.stem} {params.outputdir}
