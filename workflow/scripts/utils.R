@@ -78,18 +78,18 @@ get_jules_month_irrig_rel_data <- function(datadir, year, month, varname, id_ste
 ## }
 
 get_irr_frac <- function(year, season, policy="current_canal") {
-  if (policy %in% policies) {
-    if (policy == "historical") {
-      suffix = ".tif"
-      mapdir <- "resources/irrigated_area_maps"
-    } else {
-      suffix = paste0("_", policy, ".tif")
-      mapdir <- "results/irrigated_area_maps"
-    }
+  ## if (policy %in% policies) {
+  if (policy == "historical") {
+    suffix = ".tif"
+    mapdir <- "resources/irrigated_area_maps"
   } else {
-    msg = paste0("Policy ", policy, " not recognised!")
-    stop(msg)
+    suffix = paste0("_", policy, ".tif")
+    mapdir <- "results/irrigated_area_maps"
   }
+  ## } else {
+  ##   msg = paste0("Policy ", policy, " not recognised!")
+  ##   stop(msg)
+  ## }
   maps = list()
   for (i in 1:length(irrigation_sources)) {
     source = irrigation_sources[i]
