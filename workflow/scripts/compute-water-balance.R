@@ -96,6 +96,7 @@ if (stem %in% c("JULES_vn6.1_irrig", "JULES_vn6.1_noirrig")) {
 if (stem %in% c("JULES_vn6.1_irrig_current")) {
   ## First we compute the water balance components based
   ## on the current canal irrigation capacity
+  dir.create("results/irrigated_area_maps", recursive=TRUE, showWarnings = FALSE)
   compute_current_canal_policy("results/irrigated_area_maps")
   summarise_water_balance(stem, "current_canal", years, outputdir)
 
