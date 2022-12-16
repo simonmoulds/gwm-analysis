@@ -57,11 +57,11 @@ if (!dir.exists(outputdir))
 ## ####################################################### ##
 ## ####################################################### ##
 
-ganges_basin = raster("../data/analysis/land.nc")
+ganges_basin = raster("resources/land.nc")
 ganges_basin[ganges_basin==0] = NA
 
 ## Identify canal command area
-cmd_area = st_read("../data/analysis/command_areas.shp")
+cmd_area = st_read("resources/irrigation/command_areas.shp")
 ## Pakistan and West Bengal are outside of the study region
 pakistan_ids = c(1:5, 8:14, 16, 20, 37, 41)
 west_bengal_ids = c(31, 34, 42, 43, 44)
@@ -85,34 +85,22 @@ india_cmd_area_east = india_cmd_area
 india_cmd_area_east[,1:(ew_divide - 1)] = NA
 
 ## Create a list of basin regions which we can loop through
-basin_regions = list(
+basin_regions <- list(
   igp=india_cmd_area,
   igp_east = india_cmd_area_east,
   igp_west = india_cmd_area_west
 )
-grid_cell_area = raster::area(india_cmd_area) # km2
+grid_cell_area <- raster::area(india_cmd_area) # km2
 
 ## Create directories for output
-analysis_dir = "../data/analysis"
-historical_analysis_dir = file.path(
-    analysis_dir, "historical"
-)
-current_canal_analysis_dir = file.path(
-    analysis_dir, "current_canal"
-)
-restored_canal_analysis_dir = file.path(
-    analysis_dir, "restored_canal"
-)
+historical_analysis_dir <- file.path(outputdir, "historical")
+current_canal_analysis_dir <- file.path(outputdir, "current_canal")
+restored_canal_analysis_dir <- file.path(outputdir, "restored_canal")
 
 ## For spatial plots
-world = ne_countries(scale="small", continent="asia", returnclass="sf")
-india =  st_read(
-  file.path(
-    "../../south-asia-irrigation-source", "data",
-    "GIS-shapefiles-1966base",
-    "india70again.shp"
-  )
-) %>%
+world <- ne_countries(scale="small", continent="asia", returnclass="sf")
+india <-
+  st_read(file.path("resources", "GIS-shapefiles-1966base", "india70again.shp")) %>%
   as_Spatial()
 
 india$ID = 1
@@ -155,67 +143,67 @@ compute_basin_total = function(fn, basin) {
 }
 
 ## TODO make this its own script because it takes so long
-overwrite = FALSE
-if (overwrite | !file.exists("historical_irrigation_demand_ts.rds")) {
-  output_list = list()
-  for (m in 1:length(basins)) {
-    basin = basins[m]; print(basin)
-    print(sprintf("Extracting data for basin %s", basin))
-    pb = txtProgressBar(min = 0, max = length(years), initial = 0)
-    for (i in 1:length(years)) {
-      year = years[i]
-      fn = file.path(
-        historical_analysis_dir,
-        paste0("annual_precip_historical_", year, "_noirrig.tif")
-      )
-      precip_basin_sum = compute_basin_total(fn, basin_regions[[basin]])
-      et_basin_sum = compute_basin_total(
-        fn %>% gsub("precip", "et", .),
-        basin_regions[[basin]]
-      )
-      surf_roff_basin_sum = compute_basin_total(
-        fn %>% gsub("precip", "surf_roff", .),
-        basin_regions[[basin]]
-      )
-      sub_surf_roff_basin_sum = compute_basin_total(
-        fn %>% gsub("precip", "sub_surf_roff", .),
-        basin_regions[[basin]]
-      )
-      for (j in 1:length(seasons)) {
-        season = seasons[j]
-        for (k in 1:length(types)) {
-          type = types[k]
-          fn = file.path(
-            historical_analysis_dir,
-            paste0(
-              season, "_", type,
-              "_irrigation_historical_",
-              year, "_irrig.tif"
-            )
+## overwrite = FALSE
+## if (overwrite | !file.exists("historical_irrigation_demand_ts.rds")) {
+output_list = list()
+for (m in 1:length(basins)) {
+  ## basin = basins[m]; print(basin)
+  print(sprintf("Extracting data for basin %s", basin))
+  pb = txtProgressBar(min = 0, max = length(years), initial = 0)
+  for (i in 1:length(years)) {
+    year <- years[i]
+    fn <- file.path(
+      historical_analysis_dir,
+      paste0("annual_precip_historical_", year, "_noirrig.tif")
+    )
+    precip_basin_sum <- compute_basin_total(fn, basin_regions[[basin]])
+    et_basin_sum <- compute_basin_total(
+      fn %>% gsub("precip", "et", .),
+      basin_regions[[basin]]
+    )
+    surf_roff_basin_sum <- compute_basin_total(
+      fn %>% gsub("precip", "surf_roff", .),
+      basin_regions[[basin]]
+    )
+    sub_surf_roff_basin_sum <- compute_basin_total(
+      fn %>% gsub("precip", "sub_surf_roff", .),
+      basin_regions[[basin]]
+    )
+    for (j in 1:length(seasons)) {
+      season <- seasons[j]
+      for (k in 1:length(types)) {
+        type <- types[k]
+        fn <- file.path(
+          historical_analysis_dir,
+          paste0(
+            season, "_", type,
+            "_irrigation_historical_",
+            year, "_irrig.tif"
           )
-          irrigation_basin_sum = compute_basin_total(fn, basin_regions[[basin]])
-          output_list[[length(output_list) + 1]] = data.frame(
-            year = year,
-            season = season,
-            types = type,
-            basin = basin,
-            irrigation = irrigation_basin_sum,
-            precip = precip_basin_sum,
-            et = et_basin_sum,
-            surf_roff = surf_roff_basin_sum,
-            sub_surf_roff = sub_surf_roff_basin_sum
-          )
-        }
+        )
+        irrigation_basin_sum <- compute_basin_total(fn, basin_regions[[basin]])
+        output_list[[length(output_list) + 1]] <- data.frame(
+          year = year,
+          season = season,
+          types = type,
+          basin = basin,
+          irrigation = irrigation_basin_sum,
+          precip = precip_basin_sum,
+          et = et_basin_sum,
+          surf_roff = surf_roff_basin_sum,
+          sub_surf_roff = sub_surf_roff_basin_sum
+        )
       }
-      setTxtProgressBar(pb, i)
     }
-    close(pb)
+    setTxtProgressBar(pb, i)
   }
-  historical_ts = do.call("rbind", output_list) %>% as_tibble()
-  saveRDS(output, "historical_irrigation_demand_ts.rds")
-} else {
-  historical_ts = readRDS("historical_irrigation_demand_ts.rds")
+  close(pb)
 }
+historical_ts = do.call("rbind", output_list) %>% as_tibble()
+saveRDS(output, "historical_irrigation_demand_ts.rds")
+## } else {
+##   historical_ts = readRDS("historical_irrigation_demand_ts.rds")
+## }
 
 ## ####################################################### ##
 ## ####################################################### ##

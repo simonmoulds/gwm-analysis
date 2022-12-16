@@ -18,16 +18,17 @@ module jules_mosart:
 
 rule all:
     input:
-        expand('results/regrid_filenames_{stem}.txt', stem=STEMS),
-        expand('results/aggregate_month_filenames_{stem}.txt', stem=STEMS),
-        expand('results/resample_filenames_{stem}.txt', stem=STEMS),
-        expand('results/relative_irrigation_filenames_{stem}.txt', stem=STEMS),
-        expand('results/relative_monthly_irrigation_filenames_{stem}.txt', stem=STEMS),
-        'results/command_areas.tif',
-        'results/command_inlets_0.083333Deg.gpkg',
-        'results/command_inlets_0.100000Deg.gpkg',
-        'results/irrigation_policy_maps',
-        expand('results/compute_water_balance_{stem}.txt', stem=STEMS)
+        # expand('results/regrid_filenames_{stem}.txt', stem=STEMS),
+        # expand('results/aggregate_month_filenames_{stem}.txt', stem=STEMS),
+        # expand('results/resample_filenames_{stem}.txt', stem=STEMS),
+        # expand('results/relative_irrigation_filenames_{stem}.txt', stem=STEMS),
+        # expand('results/relative_monthly_irrigation_filenames_{stem}.txt', stem=STEMS),
+        # 'results/command_areas.tif',
+        # 'results/command_inlets_0.083333Deg.gpkg',
+        # 'results/command_inlets_0.100000Deg.gpkg',
+        # 'results/irrigation_policy_maps',
+        # expand('results/compute_water_balance_{stem}.txt', stem=STEMS)
+        expand('results/{stem}/historical_irrigation_demand_ts.rds', stem=STEMS)
 
 use rule regrid_jules_output from jules_mosart as jules_mosart_regrid_jules_output with:
     input:
@@ -155,6 +156,24 @@ rule compute_water_balance:
     shell:
         """
         Rscript {input.script} {wildcards.stem} {params.outputdir}
+        """
+
+rule extract_time_series:
+    input:
+        script='workflow/scripts/extract-time-series.R'
+    output:
+        'results/{stem}/historical_irrigation_demand_ts.rds'
+    params:
+        outputdir='results/{stem}'
+    resources:
+        time = '03:00:00',
+        mem_mb = 4000,
+        partition = 'short'
+    conda:
+        'jules_mosart'
+    shell:
+        """
+        Rscript {input.script} {params.outputdir} {params.outputdir}
         """
 
 # rule select_gleam_data:
