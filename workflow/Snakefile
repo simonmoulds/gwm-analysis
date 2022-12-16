@@ -11,6 +11,7 @@ CONFIG='config/gwm-arc-config.yml'
 configfile: JULES_MOSART_CONFIG
 
 STEMS = config['jules']['id_stem']
+HISTORICAL_STEMS = [stem for stem in STEMS if stem != 'JULES_vn6.1_irrig_current']
 
 module jules_mosart:
     snakefile: github("simonmoulds/jules-mosart", path="workflow/Snakefile", branch="main")
@@ -28,7 +29,7 @@ rule all:
         # 'results/command_inlets_0.100000Deg.gpkg',
         # 'results/irrigation_policy_maps',
         # expand('results/compute_water_balance_{stem}.txt', stem=STEMS)
-        expand('results/{stem}/historical_irrigation_demand_ts.rds', stem=STEMS)
+        expand('results/{stem}/historical_irrigation_demand_ts.rds', stem=HISTORICAL_STEMS)
 
 use rule regrid_jules_output from jules_mosart as jules_mosart_regrid_jules_output with:
     input:
@@ -135,6 +136,7 @@ rule make_irrig_policy:
         'jules_mosart'
     shell:
         """
+        export R_LIBS_USER=/home/cenv0857/local/rlibs
         Rscript {input.script} {input.land_frac} {input.india_frac} {output}
         """
 
@@ -155,10 +157,11 @@ rule compute_water_balance:
         'jules_mosart'
     shell:
         """
+        export R_LIBS_USER=/home/cenv0857/local/rlibs
         Rscript {input.script} {wildcards.stem} {params.outputdir}
         """
 
-rule extract_time_series:
+rule extract_historical_time_series:
     input:
         script='workflow/scripts/extract-time-series.R'
     output:
@@ -173,6 +176,7 @@ rule extract_time_series:
         'jules_mosart'
     shell:
         """
+        export R_LIBS_USER=/home/cenv0857/local/rlibs
         Rscript {input.script} {params.outputdir} {params.outputdir}
         """
 

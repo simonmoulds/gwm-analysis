@@ -111,6 +111,8 @@ for (m in 1:length(basins)) {
   for (i in 1:length(years)) {
     year <- years[i]
     ptn <- paste0("annual_precip_historical_", year, "_(.*).tif")
+    print(inputdir)
+    print(ptn)
     fn <- list.files(inputdir, ptn, full.names = TRUE)
     ## fn <- file.path(
     ##   inputdir,
