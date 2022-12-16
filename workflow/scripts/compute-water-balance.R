@@ -90,8 +90,7 @@ year_months = 11:22 # Nov-Oct (year+1)
 ## }
 
 if (stem %in% c("JULES_vn6.1_irrig", "JULES_vn6.1_noirrig")) {
-  ## summarise_water_balance(stem, "historical", years, outputdir)
-  print("Hello, world")
+  summarise_water_balance(stem, "historical", years, outputdir)
 }
 
 if (stem %in% c("JULES_vn6.1_irrig_current")) {
@@ -103,7 +102,7 @@ if (stem %in% c("JULES_vn6.1_irrig_current")) {
 
   ## On that basis we can compute by how much canal irrigation
   ## needs to be expanded
-  compute_restored_canal_policy(outputdir)
+  compute_restored_canal_policy("results/irrigated_area_maps")
   summarise_water_balance(stem, "restored_canal", years, outputdir)
 }
 

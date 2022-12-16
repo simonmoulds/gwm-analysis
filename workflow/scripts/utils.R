@@ -100,7 +100,6 @@ get_irr_frac <- function(year, season, policy="current_canal") {
         year, "_india_0.500000Deg", suffix
       )
     )
-    print(fn)
     maps[[source]] = raster(fn)
   }
   maps = stack(maps)
