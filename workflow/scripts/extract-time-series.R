@@ -160,5 +160,8 @@ for (m in 1:length(basins)) {
   }
   close(pb)
 }
-historical_ts = do.call("rbind", output_list) %>% as_tibble()
-saveRDS(outputdir, "historical_irrigation_demand_ts.rds")
+historical_ts <- do.call("rbind", output_list) %>% as_tibble()
+saveRDS(
+  object = historical_ts,
+  file = file.path(outputdir, "historical_irrigation_demand_ts.rds")
+)
