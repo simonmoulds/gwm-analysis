@@ -92,7 +92,6 @@ types <- c("gw", "sw", "total")
 basins <- names(basin_regions)
 
 compute_basin_total <- function(fn, basin) {
-  print(fn)
   r <- raster(fn)
   r <- resample(r, ganges_basin, method="ngb")
   r <- r / 1000 # m -> km
@@ -106,13 +105,11 @@ compute_basin_total <- function(fn, basin) {
 
 output_list <- list()
 for (m in 1:length(basins)) {
-  ## print(sprintf("Extracting data for basin %s", basin))
+  basin = basins[m]
   pb <- txtProgressBar(min = 0, max = length(years), initial = 0)
   for (i in 1:length(years)) {
     year <- years[i]
     ptn <- paste0("annual_precip_historical_", year, "_(.*).tif")
-    print(inputdir)
-    print(ptn)
     fn <- list.files(inputdir, ptn, full.names = TRUE)
     ## fn <- file.path(
     ##   inputdir,
