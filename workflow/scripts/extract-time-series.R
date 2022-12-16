@@ -52,7 +52,6 @@ west_bengal_ids <- c(31, 34, 42, 43, 44)
 india_cmd_area <-
   cmd_area %>%
   filter(!ID %in% c(pakistan_ids, west_bengal_ids))
-print("a")
 
 ## Convert to sp for plotting with raster
 india_cmd_area_sp <- india_cmd_area %>% as_Spatial()
@@ -61,7 +60,6 @@ india_cmd_area[india_cmd_area > 0] <- 1
 india_cmd_area_poly <- rasterToPolygons(
   india_cmd_area, dissolve = TRUE
 ) %>% st_as_sf()
-print("b")
 
 ## Create raster images of the east and west portion of the basin
 ## TODO check this is consistent with the literature
@@ -70,7 +68,6 @@ india_cmd_area_west <- india_cmd_area
 india_cmd_area_west[,ew_divide:160] <- NA
 india_cmd_area_east <- india_cmd_area
 india_cmd_area_east[,1:(ew_divide - 1)] <- NA
-print("c")
 
 ## Create a list of basin regions which we can loop through
 basin_regions <- list(
@@ -79,7 +76,6 @@ basin_regions <- list(
   igp_west = india_cmd_area_west
 )
 grid_cell_area <- raster::area(india_cmd_area) # km2
-print("d")
 
 ## ####################################################### ##
 ## ####################################################### ##
@@ -96,6 +92,7 @@ types <- c("gw", "sw", "total")
 basins <- names(basin_regions)
 
 compute_basin_total <- function(fn, basin) {
+  print(fn)
   r <- raster(fn)
   r <- resample(r, ganges_basin, method="ngb")
   r <- r / 1000 # m -> km
