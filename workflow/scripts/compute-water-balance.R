@@ -102,7 +102,10 @@ if (stem %in% c("JULES_vn6.1_irrig_current")) {
 
   ## On that basis we can compute by how much canal irrigation
   ## needs to be expanded
-  compute_restored_canal_policy("results/irrigated_area_maps")
+  compute_restored_canal_policy(
+    inputdir = file.path("results", stem),
+    outputdir = "results/irrigated_area_maps"
+  )
   summarise_water_balance(stem, "restored_canal", years, outputdir)
 }
 

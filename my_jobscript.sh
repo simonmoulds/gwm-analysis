@@ -18,6 +18,9 @@ source activate $DATA/envs/snakemake
 # PYTHONPATH sometimes causes issues
 export PYTHONPATH=
 
+# Make sure R scripts can access local libraries
+export R_LIBS_USER=$HOME/local/rlibs
+
 snakemake --profile $HOME/.config/snakemake/slurm.arc --cores 1 --use-conda --conda-base-path $DATA --rerun-incomplete
 
 # smcmd="snakemake --profile $HOME/.config/snakemake/slurm.arc $@"

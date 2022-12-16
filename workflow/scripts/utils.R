@@ -453,7 +453,7 @@ compute_target_canal_area <- function(datadir,
 ## q90_year <- yrs[which.min(abs(total_precip - q90))]
 ## ## TODO decide how to use the above information
 
-compute_restored_canal_policy <- function(datadir, ...) {
+compute_restored_canal_policy <- function(inputdir, outputdir, ...) {
   ## Load current canal [to get total irrigated area]
   fs <- list.files(
     path = "resources/irrigated_area_maps",
@@ -461,7 +461,7 @@ compute_restored_canal_policy <- function(datadir, ...) {
     full.names = TRUE
   )
   total_irrigated_area <- stack(fs) %>% stackApply(indices = rep(1, length(fs)), fun = sum)
-  f_kharif <- compute_target_canal_area(datadir, f_leakage = 0.15)
+  f_kharif <- compute_target_canal_area(inputdir, f_leakage = 0.15)
   f_kharif_sw <- f_kharif$sw
   f_kharif_gw <- f_kharif$gw
 
@@ -481,7 +481,7 @@ compute_restored_canal_policy <- function(datadir, ...) {
   get_filename <- function(source) {
     fn <- sprintf("icrisat_kharif_%s_2010_india_0.500000Deg_restored_canal.tif", source)
     ## return(file.path("resources/irrigated_area_maps", fn))
-    return(file.path(datadir, fn))
+    return(file.path(outputdir, fn))
   }
   writeRaster(canal_irrigated_area, get_filename("canal"), overwrite = TRUE)
   writeRaster(other_sources_irrigated_area, get_filename("other_sources"), overwrite = TRUE)
@@ -512,7 +512,7 @@ compute_restored_canal_policy <- function(datadir, ...) {
   get_filename <- function(source) {
     fn <- sprintf("icrisat_rabi_%s_2010_india_0.500000Deg_restored_canal.tif", source)
     ## return(file.path("resources/irrigated_area_maps", fn))
-    return(file.path(datadir, fn))
+    return(file.path(outputdir, fn))
   }
   writeRaster(canal_irrigated_area, get_filename("canal"), overwrite = TRUE)
   writeRaster(other_sources_irrigated_area, get_filename("other_sources"), overwrite = TRUE)
@@ -535,7 +535,7 @@ compute_restored_canal_policy <- function(datadir, ...) {
   get_filename <- function(source) {
     fn <- sprintf("icrisat_zaid_%s_2010_india_0.500000Deg_restored_canal.tif", source)
     ## return(file.path("resources/irrigated_area_maps", fn))
-    return(file.path(datadir, fn))
+    return(file.path(outputdir, fn))
   }
   writeRaster(canal_irrigated_area, get_filename("canal"), overwrite = TRUE)
   writeRaster(other_sources_irrigated_area, get_filename("other_sources"), overwrite = TRUE)
@@ -558,7 +558,7 @@ compute_restored_canal_policy <- function(datadir, ...) {
   get_filename <- function(source) {
     fn <- sprintf("icrisat_continuous_%s_2010_india_0.500000Deg_restored_canal.tif", source)
     ## return(file.path("resources/irrigated_area_maps", fn))
-    return(file.path(datadir, fn))
+    return(file.path(outputdir, fn))
   }
   writeRaster(canal_irrigated_area, get_filename("canal"), overwrite = TRUE)
   writeRaster(other_sources_irrigated_area, get_filename("other_sources"), overwrite = TRUE)
