@@ -4,12 +4,14 @@
 # in particular regarding the standardized folder structure mentioned there. 
 import os
 
-JULES_MOSART='/home/cenv0857/jules-mosart'
+HOME=os.getenv("HOME")
+JULES_MOSART=os.path.join(HOME, 'projects/jules-mosart')
 JULES_MOSART_CONFIG='config/gwm-jm-arc-config.yml'
 CONFIG='config/gwm-arc-config.yml'
 
 configfile: JULES_MOSART_CONFIG
 
+# Define the JULES simulations that will be analysed (STEM is a part of the filename)
 STEMS = config['jules']['id_stem']
 HISTORICAL_STEMS = [stem for stem in STEMS if stem != 'JULES_vn6.1_irrig_current']
 
@@ -19,7 +21,7 @@ module jules_mosart:
 
 rule all:
     input:
-        # expand('results/regrid_filenames_{stem}.txt', stem=STEMS),
+        expand('results/regrid_filenames_{stem}.txt', stem=STEMS),
         # expand('results/aggregate_month_filenames_{stem}.txt', stem=STEMS),
         # expand('results/resample_filenames_{stem}.txt', stem=STEMS),
         # expand('results/relative_irrigation_filenames_{stem}.txt', stem=STEMS),
@@ -29,7 +31,7 @@ rule all:
         # 'results/command_inlets_0.100000Deg.gpkg',
         # 'results/irrigation_policy_maps',
         # expand('results/compute_water_balance_{stem}.txt', stem=STEMS)
-        expand('results/{stem}/historical_irrigation_demand_ts.rds', stem=HISTORICAL_STEMS)
+        # expand('results/{stem}/historical_irrigation_demand_ts.rds', stem=HISTORICAL_STEMS)
 
 use rule regrid_jules_output from jules_mosart as jules_mosart_regrid_jules_output with:
     input:
@@ -38,6 +40,8 @@ use rule regrid_jules_output from jules_mosart as jules_mosart_regrid_jules_outp
             'workflow/scripts/regrid-jules-output.py'
         ),
         config=JULES_MOSART_CONFIG
+    conda:
+        'envs/conda_environment_base.yml'
 
 use rule aggregate_jules_output_month from jules_mosart as jules_mosart_aggregate_jules_output_month with:
     input:
@@ -47,6 +51,8 @@ use rule aggregate_jules_output_month from jules_mosart as jules_mosart_aggregat
             'workflow/scripts/aggregate-jules-output.py'
         ),
         config=JULES_MOSART_CONFIG
+    conda:
+        'envs/conda_environment_base.yml'
 
 use rule resample_jules_output from jules_mosart as jules_mosart_resample_jules_output with:
     input:
@@ -56,6 +62,8 @@ use rule resample_jules_output from jules_mosart as jules_mosart_resample_jules_
             'workflow/scripts/resample-jules-output.py'
         ),
         config=JULES_MOSART_CONFIG
+    conda:
+        'envs/conda_environment_base.yml'
 
 rule process_jules_output:
     input:
@@ -71,7 +79,7 @@ rule process_jules_output:
         mem_mb=4000,
         partition='short'
     conda:
-        'jules_mosart'
+        'envs/conda_environment_base.yml'
     shell:
         """
         python {input.script} --inputfile {input.regrid_filenames} --outputfile {output} --outputdir {params.outputdir} --config {input.config}
@@ -91,7 +99,7 @@ rule aggregate_relative_irrigation_output_month:
         mem_mb=4000,
         partition='short'
     conda:
-        'jules_mosart'
+        'envs/conda_environment_base.yml'
     shell:
         """
         python {input.script} --inputfile {input.rel_irrig_filenames} --outputfile {output} --outputdir {params.outputdir} --config {input.config}
@@ -112,7 +120,7 @@ rule prepare_command_areas:
         mem_mb=4000,
         partition='short'
     conda:
-        'jules_mosart'
+        'envs/conda_environment_base.yml'
     shell:
         """
         export R_LIBS_USER=/home/cenv0857/local/rlibs
@@ -133,7 +141,7 @@ rule make_irrig_policy:
         mem_mb = 4000,
         partition = 'short'
     conda:
-        'jules_mosart'
+        'envs/conda_environment_base.yml'
     shell:
         """
         export R_LIBS_USER=/home/cenv0857/local/rlibs
@@ -154,10 +162,10 @@ rule compute_water_balance:
         mem_mb = 4000,
         partition = 'short'
     conda:
-        'jules_mosart'
+        'envs/conda_environment_base.yml'
     shell:
         """
-        export R_LIBS_USER=/home/cenv0857/local/rlibs
+        # export R_LIBS_USER=/home/cenv0857/local/rlibs
         Rscript {input.script} {wildcards.stem} {params.outputdir}
         """
 
@@ -173,10 +181,10 @@ rule extract_historical_time_series:
         mem_mb = 4000,
         partition = 'short'
     conda:
-        'jules_mosart'
+        'envs/conda_environment_base.yml'
     shell:
         """
-        export R_LIBS_USER=/home/cenv0857/local/rlibs
+        # export R_LIBS_USER=/home/cenv0857/local/rlibs
         Rscript {input.script} {params.outputdir} {params.outputdir}
         """
 
