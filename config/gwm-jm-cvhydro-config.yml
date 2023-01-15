@@ -10,7 +10,7 @@ jules:
   job_name: jules_{year}
   profile_name: daily_hydrology
   jules_output_directory: /home/sm510/JULES_output/u-ci496
-  gridfile: /home/sm510/projects/ganges_water_machine_data/wfdei/ancils/WFD-EI-LandFraction2d_igp.nc
+  gridfile: resources/WFD-EI-LandFraction2d_igp.nc
   y_dim_name: lat
   x_dim_name: lon
   mask_var_name: lsmask

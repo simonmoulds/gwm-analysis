@@ -6,8 +6,8 @@ import os
 
 HOME=os.getenv("HOME")
 JULES_MOSART=os.path.join(HOME, 'projects/jules-mosart')
-JULES_MOSART_CONFIG='config/gwm-jm-arc-config.yml'
-CONFIG='config/gwm-arc-config.yml'
+JULES_MOSART_CONFIG='config/gwm-jm-cvhydro-config.yml'
+CONFIG='config/gwm-cvhydro-config.yml'
 
 configfile: JULES_MOSART_CONFIG
 
@@ -22,8 +22,8 @@ module jules_mosart:
 rule all:
     input:
         expand('results/regrid_filenames_{stem}.txt', stem=STEMS),
-        # expand('results/aggregate_month_filenames_{stem}.txt', stem=STEMS),
-        # expand('results/resample_filenames_{stem}.txt', stem=STEMS),
+        expand('results/aggregate_month_filenames_{stem}.txt', stem=STEMS),
+        expand('results/resample_filenames_{stem}.txt', stem=STEMS),
         # expand('results/relative_irrigation_filenames_{stem}.txt', stem=STEMS),
         # expand('results/relative_monthly_irrigation_filenames_{stem}.txt', stem=STEMS),
         # 'results/command_areas.tif',
@@ -129,8 +129,8 @@ rule prepare_command_areas:
 
 rule make_irrig_policy:
     input:
-        land_frac='/data/ouce-drift/cenv0857/ganges_water_machine_data/WFD-EI-LandFraction2d_IGP.tif',
-        india_frac='/data/ouce-drift/cenv0857/ganges_water_machine_data/india_frac_0.500000Deg.tif',
+        land_frac='resources/WFD-EI-LandFraction2d_IGP.tif',
+        india_frac='resources/india_frac_0.500000Deg.tif',
         script='workflow/scripts/make-irrig-policy.R',
     output:
         directory('results/irrigation_policy_maps')
