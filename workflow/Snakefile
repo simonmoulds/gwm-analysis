@@ -24,13 +24,13 @@ rule all:
         expand('results/regrid_filenames_{stem}.txt', stem=STEMS),
         expand('results/aggregate_month_filenames_{stem}.txt', stem=STEMS),
         expand('results/resample_filenames_{stem}.txt', stem=STEMS),
-        # expand('results/relative_irrigation_filenames_{stem}.txt', stem=STEMS),
-        # expand('results/relative_monthly_irrigation_filenames_{stem}.txt', stem=STEMS),
-        # 'results/command_areas.tif',
-        # 'results/command_inlets_0.083333Deg.gpkg',
-        # 'results/command_inlets_0.100000Deg.gpkg',
-        # 'results/irrigation_policy_maps',
-        # expand('results/compute_water_balance_{stem}.txt', stem=STEMS)
+        expand('results/relative_irrigation_filenames_{stem}.txt', stem=STEMS),
+        expand('results/relative_monthly_irrigation_filenames_{stem}.txt', stem=STEMS),
+        'results/command_areas.tif',
+        'results/command_inlets_0.083333Deg.gpkg',
+        'results/command_inlets_0.100000Deg.gpkg',
+        'results/irrigation_policy_maps',
+        expand('results/compute_water_balance_{stem}.txt', stem=STEMS)
         # expand('results/{stem}/historical_irrigation_demand_ts.rds', stem=HISTORICAL_STEMS)
 
 use rule regrid_jules_output from jules_mosart as jules_mosart_regrid_jules_output with:
@@ -42,6 +42,8 @@ use rule regrid_jules_output from jules_mosart as jules_mosart_regrid_jules_outp
         config=JULES_MOSART_CONFIG
     conda:
         'envs/conda_environment_base.yml'
+    log:
+        'results/log/regrid_jules_output_{stem}.log'
 
 use rule aggregate_jules_output_month from jules_mosart as jules_mosart_aggregate_jules_output_month with:
     input:
@@ -53,6 +55,8 @@ use rule aggregate_jules_output_month from jules_mosart as jules_mosart_aggregat
         config=JULES_MOSART_CONFIG
     conda:
         'envs/conda_environment_base.yml'
+    log:
+        'results/log/aggregate_jules_output_month_{stem}.log'
 
 use rule resample_jules_output from jules_mosart as jules_mosart_resample_jules_output with:
     input:
@@ -64,6 +68,8 @@ use rule resample_jules_output from jules_mosart as jules_mosart_resample_jules_
         config=JULES_MOSART_CONFIG
     conda:
         'envs/conda_environment_base.yml'
+    log:
+        'results/log/resample_jules_output_{stem}.log'
 
 rule process_jules_output:
     input:
@@ -80,6 +86,8 @@ rule process_jules_output:
         partition='short'
     conda:
         'envs/conda_environment_base.yml'
+    log:
+        'results/log/process_jules_output_{stem}.log'
     shell:
         """
         python {input.script} --inputfile {input.regrid_filenames} --outputfile {output} --outputdir {params.outputdir} --config {input.config}
@@ -100,6 +108,8 @@ rule aggregate_relative_irrigation_output_month:
         partition='short'
     conda:
         'envs/conda_environment_base.yml'
+    log:
+        'results/log/aggregate_relative_irrigation_output_month_{stem}.log'
     shell:
         """
         python {input.script} --inputfile {input.rel_irrig_filenames} --outputfile {output} --outputdir {params.outputdir} --config {input.config}
@@ -123,7 +133,7 @@ rule prepare_command_areas:
         'envs/conda_environment_base.yml'
     shell:
         """
-        export R_LIBS_USER=/home/cenv0857/local/rlibs
+        # export R_LIBS_USER=/home/cenv0857/local/rlibs
         Rscript {input.script} {input.config}
         """
 
@@ -144,7 +154,7 @@ rule make_irrig_policy:
         'envs/conda_environment_base.yml'
     shell:
         """
-        export R_LIBS_USER=/home/cenv0857/local/rlibs
+        # export R_LIBS_USER=/home/cenv0857/local/rlibs
         Rscript {input.script} {input.land_frac} {input.india_frac} {output}
         """
 
