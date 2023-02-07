@@ -213,228 +213,90 @@ basins = names(basin_regions)
 ## ####################################################### ##
 ## ####################################################### ##
 
-## gplot_data <- function(x, maxpixels = 50000)  {
-##   ## https://stackoverflow.com/a/47190738
-##   x <- raster::sampleRegular(x, maxpixels, asRaster = TRUE)
-##   coords <- raster::xyFromCell(x, seq_len(raster::ncell(x)))
-##   ## Extract values
-##   dat <- utils::stack(as.data.frame(raster::getValues(x)))
-##   names(dat) <- c('value', 'variable')
-##   dat <- dplyr::as_tibble(data.frame(coords, dat))
-##   if (!is.null(levels(x))) {
-##     dat <- dplyr::left_join(dat, levels(x)[[1]],
-##                             by = c("value" = "ID"))
-##   }
-##   dat
-## }
+## Load some maps for plotting
+sw_kharif_maps = list()
+gw_kharif_maps = list()
+sw_rabi_maps = list()
+gw_rabi_maps = list()
+precip_maps = list()
+pet_maps = list()
+aridity_maps = list()
 
-## ## current_canal_area = raster("../data/irrigated_area_maps/icrisat_kharif_canal_2010_india_0.500000Deg_current_canal.tif")
-## ## restored_canal_area = raster("../data/irrigated_area_maps/icrisat_kharif_canal_2010_india_0.500000Deg_restored_canal.tif")
+for (i in 1:length(years)) {
+  sw_kharif_total <- list.files(
+    "resources/irrigated_area_maps/",
+    pattern = paste0("icrisat_kharif_(canal|other_sources|tanks)_", years[i], "_india_0.500000Deg.tif"),
+    full.names = TRUE
+  ) %>%
+    raster::stack() %>%
+    stackApply(indices = c(1, 1, 1), fun = sum) %>%
+    resample(india_cmd_area) %>%
+    `*`(india_cmd_area)
 
-## ## st = stack(current_canal_area, restored_canal_area)
-## ## st = resample(st, ganges_basin, method="bilinear")
-## ## st = st * india_cmd_area
-## ## st = st %>% setNames(c("Current", "Restored"))
-## ## st_data = gplot_data(st)
+  gw_kharif_total <- list.files(
+    "resources/irrigated_area_maps/",
+    pattern = paste0("icrisat_kharif_(other_wells|tubewells)_", years[i], "_india_0.500000Deg.tif"),
+    full.names = TRUE
+  ) %>%
+    raster::stack() %>%
+    stackApply(indices = c(1, 1), fun = sum) %>%
+    resample(india_cmd_area) %>%
+    `*`(india_cmd_area)
 
-## sf_use_s2(FALSE) # Otherwise coord_sf(...) does not work correctly
-## myplotfun1 <- function(x, ...) {
-##   st_data <- gplot_data(x, ...)
-##   p <- ggplot() +
-##     geom_raster(data = st_data, aes(x = x, y = y, fill = value)) +
-##     geom_sf(data = india_cmd_area_poly, color = "black", fill = NA, size = 0.2) +
-##     geom_sf(data = world, color = "black", fill = NA, size = 0.4) +
-##     scale_x_continuous(limits = c(69, 88.75), expand = expansion(0)) +
-##     scale_y_continuous(limits = c(23.25, 33.25), expand = expansion(0)) +
-##     ## scale_fill_stepsn(
-##     ##   colours = RColorBrewer::brewer.pal(9, "Blues"),
-##     ##   breaks = seq(0, 0.5, by=0.025),
-##     ##   limits = c(0, 0.5),
-##     ##   labels = labelfun,
-##     ##   na.value = "grey",
-##     ##   guide = "legend",
-##     ##   expand = c(0, 0)
-##     ## ) +
-##     coord_sf() +
-##     theme_bw() +
-##     theme(panel.grid = element_blank(),
-##           axis.title = element_blank(),
-##           strip.background = element_blank(),
-##           strip.text = element_text(size = strip_label_size),
-##           axis.text.x = element_text(size = axis_label_size),
-##           axis.text.y = element_text(size = axis_label_size),
-##           axis.title.x = element_blank(),
-##           axis.title.y = element_blank(),
-##           legend.title = element_text(size = legend_title_size),
-##           legend.text = element_text(size = legend_label_size))
-##   p
-## }
+  sw_rabi_total <- list.files(
+    "resources/irrigated_area_maps/",
+    pattern = paste0("icrisat_rabi_(canal|other_sources|tanks)_", years[i], "_india_0.500000Deg.tif"),
+    full.names = TRUE
+  ) %>%
+    raster::stack() %>%
+    stackApply(indices = c(1, 1), fun = sum) %>%
+    resample(india_cmd_area) %>%
+    `*`(india_cmd_area)
 
-## labelfun <- function(x) { ifelse((x %% 0.1) == 0, x, "") }
+  gw_rabi_total <- list.files(
+    "resources/irrigated_area_maps/",
+    pattern = paste0("icrisat_rabi_(other_wells|tubewells)_", years[i], "_india_0.500000Deg.tif"),
+    full.names = TRUE
+  ) %>%
+    raster::stack() %>%
+    stackApply(indices = c(1, 1), fun = sum) %>%
+    resample(india_cmd_area) %>%
+    `*`(india_cmd_area)
 
-## get_trend <- function(x, lhs = "volume", rhs = "year", ...) {
-##   form <- as.formula(paste0(lhs, "~", rhs))
-##   trend = zyp.sen(form, x)
-##   intercept = trend$coefficients[1]
-##   slope = trend$coefficients[2]
-##   trend_conf = confint.zyp(trend)
-##   ## slope_025 = trend_conf[2,1]
-##   ## slope_975 = trend_conf[2,2]
-##   x_trend =
-##     data.frame(x[[rhs]], intercept + slope * x[[rhs]]) %>%
-##     setNames(c(rhs, "trend"))
-##     ## year = x$year,
-##     ## trend = intercept + slope * x$year
-##   ## )
-##   x_trend
-## }
+  ## precip_total = list.files(
+  ##   "results/JULES_vn6.1_irrig",
+  ##   pattern = paste0("annual_precip_historical_", years[i], "_current.tif"),
+  ##   full.names = TRUE
+  ## ) %>%
+  ##   raster::raster() %>%
+  ##   resample(india_cmd_area) %>%
+  ##   `*`(india_cmd_area)
 
-## myplotfun2 <- function(x, ...) {
-##   x_trend <- get_trend(x)
-##   p = ggplot(x, aes(x=year, y=volume)) +
-##     geom_line() +
-##     scale_x_continuous(
-##       name = "",
-##       breaks = seq(1980, 2010, 10),
-##       labels = c("1980", "1990", "2000", "2010"),
-##       limits = c(1979, 2011)
-##     ) +
-##     geom_line(aes(x=year, y=trend), data = x_trend, size=0.2, linetype=2) +
-##     ## scale_y_continuous(
-##     ##   name = "\u0394 Storage (m)"#,
-##     ##   ## breaks = seq(-0.2, 0.2, 0.1),
-##     ##   ## labels = c("-0.2", "-0.1", "0", "0.1", "0.2"),
-##     ##   ## limits = c(-0.23, 0.11)
-##     ## ) +
-##     geom_hline(yintercept = 0, size = 0.25) +
-##     theme_bw() +
-##     theme(panel.grid = element_blank(),
-##           axis.text.x = element_text(size = axis_label_size),
-##           axis.text.y = element_text(size = axis_label_size),
-##           axis.title.x = element_text(size = axis_title_size),
-##           axis.title.y = element_text(size = axis_title_size),
-##           legend.title = element_text(size = legend_title_size),
-##           legend.text = element_text(size = legend_label_size))
-##   p
-## }
+  ## pet_total = list.files(
+  ##   "results/JULES_vn6.1_irrig_current",
+  ##   pattern = paste0("annual_et_historical_", years[i], "_current.tif"),
+  ##   full.names = TRUE
+  ## ) %>%
+  ##   raster::raster() %>%
+  ##   resample(india_cmd_area) %>%
+  ##   `*`(india_cmd_area)
 
-## myplotfun3 <- function(x, ...) {
-##   x_current <- x %>% filter(policy %in% "current")
-##   x_restored <- x %>% filter(policy %in% "restored")
-##   x_current_trend <- get_trend(x_current) %>% mutate(policy = "current")
-##   x_restored_trend <- get_trend(x_restored) %>% mutate(policy = "restored")
-##   x_trend <- rbind(x_current_trend, x_restored_trend) %>% arrange(year)
-##   p = ggplot(x, aes(x=year, y=volume, color=policy)) +
-##     geom_line() +
-##     scale_x_continuous(
-##       name = "",
-##       breaks = seq(1980, 2010, 10),
-##       labels = c("1980", "1990", "2000", "2010"),
-##       limits = c(1979, 2011)
-##     ) +
-##     geom_line(aes(x=year, y=trend, color=policy), data = x_trend, size=0.2, linetype=2) +
-##     scale_y_continuous(
-##       name = "\u0394 Storage (m)"#,
-##       ## breaks = seq(-0.2, 0.2, 0.1),
-##       ## labels = c("-0.2", "-0.1", "0", "0.1", "0.2"),
-##       ## limits = c(-0.23, 0.11)
-##     ) +
-##     geom_hline(yintercept = 0, size = 0.25) +
-##     theme_bw() +
-##     theme(panel.grid = element_blank(),
-##           axis.text.x = element_text(size = axis_label_size),
-##           axis.text.y = element_text(size = axis_label_size),
-##           axis.title.x = element_text(size = axis_title_size),
-##           axis.title.y = element_text(size = axis_title_size),
-##           legend.title = element_text(size = legend_title_size),
-##           legend.text = element_text(size = legend_label_size))
-##   p
-## }
+  ## aridity_index = precip_total / pet_total
 
-## ## Load some maps for plotting
-## sw_kharif_maps = list()
-## gw_kharif_maps = list()
-## sw_rabi_maps = list()
-## gw_rabi_maps = list()
-## precip_maps = list()
-## pet_maps = list()
-## aridity_maps = list()
+  sw_kharif_maps[[i]] = sw_kharif_total * raster::area(sw_kharif_total)
+  gw_kharif_maps[[i]] = gw_kharif_total * raster::area(gw_kharif_total)
+  sw_rabi_maps[[i]] = sw_rabi_total * raster::area(sw_rabi_total)
+  gw_rabi_maps[[i]] = gw_rabi_total * raster::area(gw_rabi_total)
+  ## precip_maps[[i]] = precip_total
+  ## pet_maps[[i]] = pet_total
+  ## aridity_maps[[i]] = aridity_index
+}
 
-## for (i in 1:length(years)) {
-##   sw_kharif_total <- list.files(
-##     "../data/irrigated_area_maps/",
-##     pattern = paste0("icrisat_kharif_(canal|other_sources|tanks)_", years[i], "_india_0.500000Deg.tif"),
-##     full.names = TRUE
-##   ) %>%
-##     raster::stack() %>%
-##     stackApply(indices = c(1, 1, 1), fun = sum) %>%
-##     resample(india_cmd_area) %>%
-##     `*`(india_cmd_area)
-
-##   gw_kharif_total <- list.files(
-##     "../data/irrigated_area_maps/",
-##     pattern = paste0("icrisat_kharif_(other_wells|tubewells)_", years[i], "_india_0.500000Deg.tif"),
-##     full.names = TRUE
-##   ) %>%
-##     raster::stack() %>%
-##     stackApply(indices = c(1, 1), fun = sum) %>%
-##     resample(india_cmd_area) %>%
-##     `*`(india_cmd_area)
-
-##   sw_rabi_total <- list.files(
-##     "../data/irrigated_area_maps/",
-##     pattern = paste0("icrisat_rabi_(canal|other_sources|tanks)_", years[i], "_india_0.500000Deg.tif"),
-##     full.names = TRUE
-##   ) %>%
-##     raster::stack() %>%
-##     stackApply(indices = c(1, 1), fun = sum) %>%
-##     resample(india_cmd_area) %>%
-##     `*`(india_cmd_area)
-
-##   gw_rabi_total <- list.files(
-##     "../data/irrigated_area_maps/",
-##     pattern = paste0("icrisat_rabi_(other_wells|tubewells)_", years[i], "_india_0.500000Deg.tif"),
-##     full.names = TRUE
-##   ) %>%
-##     raster::stack() %>%
-##     stackApply(indices = c(1, 1), fun = sum) %>%
-##     resample(india_cmd_area) %>%
-##     `*`(india_cmd_area)
-
-##   precip_total = list.files(
-##     "../data/analysis/historical/",
-##     pattern = paste0("annual_precip_historical_", years[i], "_current.tif"),
-##     full.names = TRUE
-##   ) %>%
-##     raster::raster() %>%
-##     resample(india_cmd_area) %>%
-##     `*`(india_cmd_area)
-
-##   pet_total = list.files(
-##     "../data/analysis/historical/",
-##     pattern = paste0("annual_fao_et0_historical_", years[i], "_current.tif"),
-##     full.names = TRUE
-##   ) %>%
-##     raster::raster() %>%
-##     resample(india_cmd_area) %>%
-##     `*`(india_cmd_area)
-
-##   aridity_index = precip_total / pet_total
-
-##   sw_kharif_maps[[i]] = sw_kharif_total * raster::area(sw_kharif_total)
-##   gw_kharif_maps[[i]] = gw_kharif_total * raster::area(gw_kharif_total)
-##   sw_rabi_maps[[i]] = sw_rabi_total * raster::area(sw_rabi_total)
-##   gw_rabi_maps[[i]] = gw_rabi_total * raster::area(gw_rabi_total)
-##   precip_maps[[i]] = precip_total
-##   pet_maps[[i]] = pet_total
-##   aridity_maps[[i]] = aridity_index
-## }
-
-## ## Promote to RasterStack
-## sw_kharif_maps = stack(sw_kharif_maps)
-## gw_kharif_maps = stack(gw_kharif_maps)
-## sw_rabi_maps = stack(sw_rabi_maps)
-## gw_rabi_maps = stack(gw_rabi_maps)
+## Promote to RasterStack
+sw_kharif_maps = stack(sw_kharif_maps)
+gw_kharif_maps = stack(gw_kharif_maps)
+sw_rabi_maps = stack(sw_rabi_maps)
+gw_rabi_maps = stack(gw_rabi_maps)
 ## precip_maps = stack(precip_maps)
 ## pet_maps = stack(pet_maps)
 ## aridity_maps = stack(aridity_maps)
@@ -444,404 +306,153 @@ basins = names(basin_regions)
 ## ####################################################### ##
 ## ####################################################### ##
 ##
-## Figure 1: Historical supply-side changes
-##
-## ####################################################### ##
-## ####################################################### ##
-
-## fig1_keywidth = 0.3
-## ## fig1_keywidth =
-## ##   grid::unit(fig1_keywidth / nbreaks, "npc")
-
-## ## Figure 1: Hydroclimatic trends
-## mean_precip = stackApply(precip_maps, indices = rep(1, nlayers(precip_maps)), mean)
-## p1 <- myplotfun1(mean_precip)
-## labelfun <- function(x) { ifelse((x %% 0.2) == 0, x, "") }
-## breaks <- seq(0, 1.8, by=0.05)
-## nbreaks <- length(breaks)
-## p1 <- p1 +
-##   scale_fill_stepsn(
-##     colours = RColorBrewer::brewer.pal(9, "Blues"),
-##     breaks = breaks,
-##     limits = c(min(breaks), max(breaks)),
-##     labels = labelfun,
-##     na.value = "grey"
-##   ) +
-##   theme(
-##     legend.position = "bottom"
-##   ) +
-##   guides(
-##     fill = guide_bins(
-##       title = expression(Depth~(m)),
-##       title.position = "top",
-##       axis = FALSE,
-##       keywidth = grid::unit(fig1_keywidth / nbreaks, "npc"),
-##       keyheight = grid::unit(3, "mm")
-##     )
-##   )
-## p1
-
-## mean_pet = stackApply(aridity_maps, indices = rep(1, nlayers(pet_maps)), mean)
-## p2 <- myplotfun1(mean_pet)
-## labelfun <- function(x) { ifelse((x %% 0.2) == 0, x, "") }
-## breaks <- seq(0, 1.6, by = 0.05)
-## nbreaks <- length(breaks)
-## p2 <- p2 +
-##   scale_fill_stepsn(
-##     colours = RColorBrewer::brewer.pal(9, "YlOrRd"), #Br"),
-##     breaks = breaks,
-##     limits = c(min(breaks), max(breaks)),
-##     labels = labelfun,
-##     na.value = "grey"
-##   ) +
-##   theme(
-##     legend.position = "bottom"
-##   ) +
-##   guides(
-##     fill = guide_bins(
-##       title = expression(Aridity~index~(`-`)),
-##       title.position = "top",
-##       axis = FALSE,
-##       keywidth = grid::unit(fig1_keywidth / nbreaks, "npc"),
-##       keyheight = grid::unit(3, "mm")
-##     )
-##   )
-## p2
-
-## ## Precipitation trend [not sure how to fit this in paper yet, but an important part of the story]
-## trend <- raster.kendall(precip_maps, p.value = TRUE)
-## slope <- trend$slope
-## pval <- trend$p.value
-## signif = pval <= 0.05
-## signif_pts = as(signif, "SpatialPointsDataFrame")
-## signif_pts = signif_pts[signif_pts$layer > 0,]
-## signif_pts = st_as_sf(signif_pts)
-## slope = slope * 1000 # meter/year -> mm/year
-## p3 <- myplotfun1(slope)
-## labelfun <- function(x) { ifelse((x %% 5) == 0, x, "") }
-## breaks <- seq(-20, 10, 0.5)
-## nbreaks <- length(breaks)
-## rdbu_pal = RColorBrewer::brewer.pal(9, "RdBu")
-## p3 <- p3 +
-##   geom_sf(data = signif_pts, size = 0.01, shape = 20) +
-##   scale_fill_stepsn(
-##     colours = rdbu_pal,
-##     breaks = breaks,
-##     values = scales::rescale(c(-20, 0, 10)),
-##     limits = c(min(breaks), max(breaks)),
-##     labels = labelfun,
-##     na.value = "grey"
-##   ) +
-##   theme(
-##     legend.position = "bottom"
-##   ) +
-##   guides(
-##     fill = guide_bins(
-##       title = expression(Precipitation~trend~(mm~y^-1)),
-##       title.position = "top",
-##       axis = FALSE,
-##       keywidth = grid::unit(fig1_keywidth / nbreaks, "npc"),
-##       keyheight = grid::unit(3, "mm")
-##     )
-##   )
-## p3
-
-## trend <- raster.kendall(aridity_maps, p.value = TRUE)
-## slope <- trend$slope
-## pval <- trend$p.value
-## signif = pval <= 0.05
-## signif_pts = as(signif, "SpatialPointsDataFrame")
-## signif_pts = signif_pts[signif_pts$layer > 0,]
-## signif_pts = st_as_sf(signif_pts)
-## ## slope = slope * 1000 # meter/year -> mm/year
-## p4 <- myplotfun1(slope)
-## labelfun <- function(x) { sapply(x, FUN=function(x) ifelse(isTRUE(all.equal(x %% 0.005, 0)), x, "")) }
-## breaks <- seq(-0.015, 0.01, 0.0005)
-## nbreaks <- length(breaks)
-## rdbu_pal = RColorBrewer::brewer.pal(9, "BrBG")
-## p4 <- p4 +
-##   geom_sf(data = signif_pts, size = 0.01, shape = 20) +
-##   scale_fill_stepsn(
-##     colours = rdbu_pal,
-##     breaks = breaks,
-##     values = scales::rescale(c(-0.015, 0, 0.01)),
-##     limits = c(min(breaks), max(breaks)),
-##     labels = labelfun,
-##     na.value = "grey"
-##   ) +
-##   theme(
-##     legend.position = "bottom"
-##   ) +
-##   guides(
-##     fill = guide_bins(
-##       title = expression(Aridity~index~trend~(y^-1)),
-##       title.position = "top",
-##       axis = FALSE,
-##       keywidth = grid::unit(fig1_keywidth / nbreaks, "npc"),
-##       keyheight = grid::unit(3, "mm")
-##   ))
-## p4
-
-## p1 <-
-##   p1 +
-##   theme(
-##     legend.margin = margin(0, 0, 0, 0),
-##     legend.box.margin = margin(-10, 0, -5, 0),
-##     ## plot.margin = grid::unit(c(0, 0, 0, 0), "mm"))
-##   )
-
-## p2 <-
-##   p2 +
-##   theme(
-##     legend.margin = margin(0, 0, 0, 0),
-##     legend.box.margin = margin(-10, 0, -5, 0),
-##     ## plot.margin = grid::unit(c(0, 0, 0, 0), "mm"),
-##     axis.text.y = element_blank()
-##   )
-## p3 <-
-##   p3 +
-##   theme(
-##     legend.margin = margin(0, 0, 0, 0),
-##     legend.box.margin = margin(-10, 0, -5, 0)
-##     )
-
-##     ## plot.margin = grid::unit(c(0, 0, 0, 0), "mm"))
-
-## p4 <-
-##   p4 +
-##   theme(
-##     legend.margin = margin(0, 0, 0, 0),
-##     legend.box.margin = margin(-10, 0, -5, 0),
-##     ## plot.margin = grid::unit(c(0, 0, 0, 0), "mm"),
-##     axis.text.y = element_blank()
-##   )
-
-## fig1 <- p1 + p2 + p3 + p4 + plot_layout(nrow = 2, ncol = 2)
-## ## fig1
-
-## fig1$patches$plots[[1]] =
-##   fig1$patches$plots[[1]] +
-##   labs(tag = "a") +
-##   theme(plot.tag.position = c(0.095, 1.035),
-##         plot.tag = element_text(size = tag_label_size, face="bold"))
-## fig1$patches$plots[[2]] =
-##   fig1$patches$plots[[2]] +
-##   labs(tag = "b") +
-##   theme(plot.tag.position = c(0.03, 1.035),
-##         plot.tag = element_text(size = tag_label_size, face="bold"))
-## fig1$patches$plots[[3]] =
-##   fig1$patches$plots[[3]] +
-##   labs(tag = "c") +
-##   theme(plot.tag.position = c(0.095, 1.035),
-##         plot.tag = element_text(size = tag_label_size, face="bold"))
-## fig1 =
-##   fig1 +
-##   labs(tag = "d") +
-##   theme(plot.tag.position = c(0.03, 1),
-##         plot.tag = element_text(vjust = -0.7, size = tag_label_size, face="bold"))
-## fig1
-
-## ggsave("../doc/figure1.png", width = 6, height = 5, units = "in")
-
-## TODO
-## * Fix misalignment of legends in p3/p4, which happens when title.position = "top"
-## * Make legend title smaller
-## * Inset plot to orient reader
-
-## ####################################################### ##
-## ####################################################### ##
-##
 ## Figure 2: Historical demand-side changes
 ##
 ## ####################################################### ##
 ## ####################################################### ##
 
-## current_canal_area = raster(
-##   file.path(
-##     "../data/irrigated_area_maps",
-##     "icrisat_kharif_canal_2010_india_0.500000Deg_current_canal.tif"
-##   )
-## )
-## current_canal_area = resample(current_canal_area, india, method = "ngb")
-## current_canal_area = current_canal_area * india_cmd_area
-## p1 <- myplotfun1(current_canal_area)
-## labelfun <- function(x) { ifelse((x %% 0.1) == 0, x, "") }
-## breaks <- seq(0, 0.6, by=0.01)
-## nbreaks <- length(breaks)
-## p1 <- p1 +
-##   scale_fill_stepsn(
-##     colours = RColorBrewer::brewer.pal(9, "Blues"),
-##     breaks = breaks,
-##     limits = c(min(breaks), max(breaks)),
-##     labels = labelfun,
-##     na.value = "grey"
-##   ) +
-##   theme(
-##     legend.position = "bottom"
-##   ) +
-##   guides(
-##     fill = guide_bins(
-##       title = expression(Fractional~area), #Depth~(m)),
-##       ## title = expression(Depth~(m)),
-##       title.position = "top",
-##       axis = FALSE,
-##       keywidth = grid::unit(fig1_keywidth / nbreaks, "npc"),
-##       keyheight = grid::unit(3, "mm")
-##     )
-##   )
+current_canal_area = raster(
+  file.path(
+    "results/irrigated_area_maps",
+    "icrisat_kharif_canal_2010_india_0.500000Deg_current_canal.tif"
+  )
+)
+current_canal_area = resample(current_canal_area, india, method = "ngb")
+current_canal_area = current_canal_area * india_cmd_area
+p1 <- myplotfun1(current_canal_area)
+labelfun <- function(x) { ifelse((x %% 0.1) == 0, x, "") }
+breaks <- seq(0, 0.6, by=0.01)
+nbreaks <- length(breaks)
+p1 <- p1 +
+  scale_fill_stepsn(
+    colours = RColorBrewer::brewer.pal(9, "Blues"),
+    breaks = breaks,
+    limits = c(min(breaks), max(breaks)),
+    labels = labelfun,
+    na.value = "grey"
+  ) +
+  theme(
+    legend.position = "bottom"
+  ) +
+  guides(
+    fill = guide_bins(
+      title = expression(Fractional~area), #Depth~(m)),
+      ## title = expression(Depth~(m)),
+      title.position = "top",
+      axis = FALSE,
+      keywidth = grid::unit(fig1_keywidth / nbreaks, "npc"),
+      keyheight = grid::unit(3, "mm")
+    )
+  )
 
-## current_gw_area = stack(
-##   list.files(
-##     "../data/irrigated_area_maps",
-##     pattern = "icrisat_kharif_(other_wells|tubewells)_2010_india_0.500000Deg_current_canal.tif",
-##     full.names = TRUE
-##   )
-## ) %>% stackApply(indices = c(1,1), fun = sum)
-## current_gw_area = resample(current_gw_area, india, method = "ngb")
-## current_gw_area = current_gw_area * india_cmd_area
-## p2 <- myplotfun1(current_gw_area)
-## labelfun <- function(x) { ifelse((x %% 0.1) == 0, x, "") }
-## breaks <- seq(0, 0.6, by=0.01)
-## nbreaks <- length(breaks)
-## p2 <- p2 +
-##   scale_fill_stepsn(
-##     colours = RColorBrewer::brewer.pal(9, "Blues"),
-##     breaks = breaks,
-##     limits = c(min(breaks), max(breaks)),
-##     labels = labelfun,
-##     na.value = "grey"
-##   ) +
-##   theme(
-##     legend.position = "bottom"
-##   ) +
-##   guides(
-##     fill = guide_bins(
-##       title = expression(Fractional~area), #Depth~(m)),
-##       ## title = expression(Depth~(m)),
-##       title.position = "top",
-##       axis = FALSE,
-##       keywidth = grid::unit(fig1_keywidth / nbreaks, "npc"),
-##       keyheight = grid::unit(3, "mm")
-##     )
-##   )
+current_gw_area = stack(
+  list.files(
+    "results/irrigated_area_maps",
+    pattern = "icrisat_kharif_(other_wells|tubewells)_2010_india_0.500000Deg_current_canal.tif",
+    full.names = TRUE
+  )
+) %>% stackApply(indices = c(1,1), fun = sum)
+current_gw_area = resample(current_gw_area, india, method = "ngb")
+current_gw_area = current_gw_area * india_cmd_area
+p2 <- myplotfun1(current_gw_area)
+labelfun <- function(x) { ifelse((x %% 0.1) == 0, x, "") }
+breaks <- seq(0, 0.6, by=0.01)
+nbreaks <- length(breaks)
+p2 <- p2 +
+  scale_fill_stepsn(
+    colours = RColorBrewer::brewer.pal(9, "Blues"),
+    breaks = breaks,
+    limits = c(min(breaks), max(breaks)),
+    labels = labelfun,
+    na.value = "grey"
+  ) +
+  theme(
+    legend.position = "bottom"
+  ) +
+  guides(
+    fill = guide_bins(
+      title = expression(Fractional~area), #Depth~(m)),
+      ## title = expression(Depth~(m)),
+      title.position = "top",
+      axis = FALSE,
+      keywidth = grid::unit(fig1_keywidth / nbreaks, "npc"),
+      keyheight = grid::unit(3, "mm")
+    )
+  )
 
-## trend <- raster.kendall(sw_kharif_maps, p.value = TRUE)
-## slope <- trend$slope
-## pval <- trend$p.value
-## signif = pval <= 0.05
-## signif_pts = as(signif, "SpatialPointsDataFrame")
-## signif_pts = signif_pts[signif_pts$layer > 0,]
-## signif_pts = st_as_sf(signif_pts)
-## ## slope = slope * 1000 # meter/year -> mm/year
-## p3 <- myplotfun1(slope)
-## labelfun <- function(x) { ifelse((x %% 1) == 0, x, "") }
-## breaks <- seq(-5, 3.5, 0.05)
-## nbreaks <- length(breaks)
-## rdbu_pal = RColorBrewer::brewer.pal(9, "RdBu")
-## p3 <- p3 +
-##   geom_sf(data = signif_pts, size = 0.01, shape = 20) +
-##   scale_fill_stepsn(
-##     colours = rdbu_pal,
-##     breaks = breaks,
-##     values = scales::rescale(c(-5, 0, 3.5)),
-##     limits = c(min(breaks), max(breaks)),
-##     labels = labelfun,
-##     na.value = "grey"
-##   ) +
-##   theme(
-##     legend.position = "bottom"
-##   ) +
-##   guides(
-##     fill = guide_bins(
-##       title = expression(Area~trend~(km^2~y^-1)),
-##       title.position = "top",
-##       axis = FALSE,
-##       keywidth = grid::unit(fig1_keywidth / nbreaks, "npc"),
-##       keyheight = grid::unit(3, "mm")
-##     )
-##   )
+trend <- raster.kendall(sw_kharif_maps, p.value = TRUE)
+slope <- trend$slope
+pval <- trend$p.value
+signif = pval <= 0.05
+signif_pts = as(signif, "SpatialPointsDataFrame")
+signif_pts = signif_pts[signif_pts$layer > 0,]
+signif_pts = st_as_sf(signif_pts)
+## slope = slope * 1000 # meter/year -> mm/year
+p3 <- myplotfun1(slope)
+labelfun <- function(x) { ifelse((x %% 1) == 0, x, "") }
+breaks <- seq(-5, 3.5, 0.05)
+nbreaks <- length(breaks)
+rdbu_pal = RColorBrewer::brewer.pal(9, "RdBu")
+p3 <- p3 +
+  geom_sf(data = signif_pts, size = 0.01, shape = 20) +
+  scale_fill_stepsn(
+    colours = rdbu_pal,
+    breaks = breaks,
+    values = scales::rescale(c(-5, 0, 3.5)),
+    limits = c(min(breaks), max(breaks)),
+    labels = labelfun,
+    na.value = "grey"
+  ) +
+  theme(
+    legend.position = "bottom"
+  ) +
+  guides(
+    fill = guide_bins(
+      title = expression(Area~trend~(km^2~y^-1)),
+      title.position = "top",
+      axis = FALSE,
+      keywidth = grid::unit(fig1_keywidth / nbreaks, "npc"),
+      keyheight = grid::unit(3, "mm")
+    )
+  )
 
-## trend <- raster.kendall(gw_kharif_maps, p.value = TRUE)
-## ## st <- st * india_cmd_area
-## slope <- trend$slope
-## pval <- trend$p.value
-## signif = pval <= 0.05
-## signif_pts = as(signif, "SpatialPointsDataFrame")
-## signif_pts = signif_pts[signif_pts$layer > 0,]
-## signif_pts = st_as_sf(signif_pts)
-## ## slope = slope * 1000 # meter/year -> mm/year
-## p4 <- myplotfun1(slope)
-## labelfun <- function(x) { ifelse((x %% 1) == 0, x, "") }
-## breaks <- seq(0, 7.5, 0.05)
-## nbreaks <- length(breaks)
-## ## rdbu_pal = RColorBrewer::brewer.pal(9, "Blues")
-## rdbu_pal = RColorBrewer::brewer.pal(9, "RdBu")[5:9]
-## p4 <- p4 +
-##   geom_sf(data = signif_pts, size = 0.01, shape = 20) +
-##   scale_fill_stepsn(
-##     colours = rdbu_pal,
-##     breaks = breaks,
-##     values = scales::rescale(c(0, 0, 7.5)),
-##     limits = c(min(breaks), max(breaks)),
-##     labels = labelfun,
-##     na.value = "grey"
-##   ) +
-##   theme(
-##     legend.position = "bottom"
-##   ) +
-##   guides(
-##     fill = guide_bins(
-##       title = expression(Area~trend~(km^2~y^-1)),
-##       title.position = "top",
-##       axis = FALSE,
-##       keywidth = grid::unit(fig1_keywidth / nbreaks, "npc"),
-##       keyheight = grid::unit(3, "mm")
-##     )
-##   )
-
-myplotfun4 <- function(x, ...) {
-  x_sw <- x %>% filter(types %in% "sw")
-  x_gw <- x %>% filter(types %in% "gw")
-  x_sw_trend <- get_trend(x_sw) %>% mutate(types = "sw")
-  x_gw_trend <- get_trend(x_gw) %>% mutate(types = "gw")
-  x_trend <- rbind(x_sw_trend, x_gw_trend) %>% arrange(year)
-  x <-
-    x %>%
-    mutate(types = factor(types, levels = c("sw", "gw"), labels = c("Surface water", "Groundwater"))) %>%
-    arrange(year, types)
-  x_trend <-
-    x_trend %>%
-    mutate(types = factor(types, levels = c("sw", "gw"), labels = c("Surface water", "Groundwater"))) %>%
-    arrange(year, types)
-  p = ggplot(x, aes(x=year, y=volume, color=types)) +
-    geom_line() +
-    scale_x_continuous(
-      name = "",
-      breaks = seq(1980, 2010, 10),
-      labels = c("1980", "1990", "2000", "2010"),
-      limits = c(1979, 2011)
-    ) +
-    geom_line(
-      aes(x=year, y=trend, color=types),
-      data = x_trend, size=0.2, linetype=2
-    ) +
-    scale_y_continuous(
-      name = "Irrigation (m)"#,
-      ## breaks = seq(-0.2, 0.2, 0.1),
-      ## labels = c("-0.2", "-0.1", "0", "0.1", "0.2"),
-      ## limits = c(-0.23, 0.11)
-    ) +
-    ## geom_hline(yintercept = 0, size = 0.25) +
-    theme_bw() +
-    theme(panel.grid = element_blank(),
-          axis.text.x = element_text(size = axis_label_size),
-          axis.text.y = element_text(size = axis_label_size),
-          axis.title.x = element_text(size = axis_title_size),
-          axis.title.y = element_text(size = axis_title_size),
-          legend.title = element_text(size = legend_title_size),
-          legend.text = element_text(size = legend_label_size))
-  p
-}
+trend <- raster.kendall(gw_kharif_maps, p.value = TRUE)
+## st <- st * india_cmd_area
+slope <- trend$slope
+pval <- trend$p.value
+signif = pval <= 0.05
+signif_pts = as(signif, "SpatialPointsDataFrame")
+signif_pts = signif_pts[signif_pts$layer > 0,]
+signif_pts = st_as_sf(signif_pts)
+## slope = slope * 1000 # meter/year -> mm/year
+p4 <- myplotfun1(slope)
+labelfun <- function(x) { ifelse((x %% 1) == 0, x, "") }
+breaks <- seq(0, 7.5, 0.05)
+nbreaks <- length(breaks)
+## rdbu_pal = RColorBrewer::brewer.pal(9, "Blues")
+rdbu_pal = RColorBrewer::brewer.pal(9, "RdBu")[5:9]
+p4 <- p4 +
+  geom_sf(data = signif_pts, size = 0.01, shape = 20) +
+  scale_fill_stepsn(
+    colours = rdbu_pal,
+    breaks = breaks,
+    values = scales::rescale(c(0, 0, 7.5)),
+    limits = c(min(breaks), max(breaks)),
+    labels = labelfun,
+    na.value = "grey"
+  ) +
+  theme(
+    legend.position = "bottom"
+  ) +
+  guides(
+    fill = guide_bins(
+      title = expression(Area~trend~(km^2~y^-1)),
+      title.position = "top",
+      axis = FALSE,
+      keywidth = grid::unit(fig1_keywidth / nbreaks, "npc"),
+      keyheight = grid::unit(3, "mm")
+    )
+  )
 
 ## TODO kharif gw/sw stack plot
 historical_ts <- readRDS("results/JULES_vn6.1_irrig/historical_irrigation_demand_ts.rds")
@@ -866,667 +477,628 @@ p12 <-
     legend.box.margin = margin(-10, 0, -5, 0)
   )
 
-ggsave("results/figure_test.png", width = 6, height = 6, units = "in")
+## ggsave("results/figure_test.png", width = 6, height = 6, units = "in")
 
-## ## p3 <- p3 + theme(legend.margin = margin(0, 0, 0, 0), legend.box.margin = margin(-10, 0, -5, 0))
-## ## p4 <- p4 + theme(legend.margin = margin(0, 0, 0, 0), legend.box.margin = margin(-10, 0, -5, 0))
-## p34 <-
-##   p3 + p4 + plot_layout(ncol = 2, guides = "keep") &
-##   theme(
-##     legend.position = "bottom",
-##     legend.margin = margin(0, 0, 0, 0),
-##     legend.box.margin = margin(-10, 0, -5, 0)
-##   )
+## p3 <- p3 + theme(legend.margin = margin(0, 0, 0, 0), legend.box.margin = margin(-10, 0, -5, 0))
+## p4 <- p4 + theme(legend.margin = margin(0, 0, 0, 0), legend.box.margin = margin(-10, 0, -5, 0))
+p34 <-
+  p3 + p4 + plot_layout(ncol = 2, guides = "keep") &
+  theme(
+    legend.position = "bottom",
+    legend.margin = margin(0, 0, 0, 0),
+    legend.box.margin = margin(-10, 0, -5, 0)
+  )
 
-## p67 <- p6 + p7 + plot_layout(nrow = 2)
+p67 <- p6 + p7 + plot_layout(nrow = 2)
 
-## p12$patches$plots[[1]] =
-##   p12$patches$plots[[1]] +
-##   labs(tag = "a") +
-##   theme(plot.tag.position = c(0.14, 1.035),
-##         plot.tag = element_text(size = tag_label_size, face="bold"))
-## p12 = p12 +
-##   labs(tag = "b") +
-##   theme(plot.tag.position = c(0.14, 1),
-##         plot.tag = element_text(vjust = -0.7, size = tag_label_size, face="bold"))
-## p34$patches$plots[[1]] =
-##   p34$patches$plots[[1]] +
-##   labs(tag = "c") +
-##   theme(plot.tag.position = c(0.14, 1.035),
-##         plot.tag = element_text(size = tag_label_size, face="bold"))
-## p34 = p34 +
-##   labs(tag = "d") +
-##   theme(plot.tag.position = c(0.14, 1),
-##         plot.tag = element_text(vjust = -0.7, size = tag_label_size, face="bold"))
+p12$patches$plots[[1]] =
+  p12$patches$plots[[1]] +
+  labs(tag = "a") +
+  theme(plot.tag.position = c(0.14, 1.035),
+        plot.tag = element_text(size = tag_label_size, face="bold"))
+p12 = p12 +
+  labs(tag = "b") +
+  theme(plot.tag.position = c(0.14, 1),
+        plot.tag = element_text(vjust = -0.7, size = tag_label_size, face="bold"))
+p34$patches$plots[[1]] =
+  p34$patches$plots[[1]] +
+  labs(tag = "c") +
+  theme(plot.tag.position = c(0.14, 1.035),
+        plot.tag = element_text(size = tag_label_size, face="bold"))
+p34 = p34 +
+  labs(tag = "d") +
+  theme(plot.tag.position = c(0.14, 1),
+        plot.tag = element_text(vjust = -0.7, size = tag_label_size, face="bold"))
 
-## p67$patches$plots[[1]] =
-##   p67$patches$plots[[1]] +
-##   labs(tag = "f") +
-##   theme(plot.tag.position = c(0.14, 1.06),
-##         plot.tag = element_text(size = tag_label_size, face="bold"))
+p67$patches$plots[[1]] =
+  p67$patches$plots[[1]] +
+  labs(tag = "f") +
+  theme(plot.tag.position = c(0.14, 1.06),
+        plot.tag = element_text(size = tag_label_size, face="bold"))
 
-## p67 = p67 +
-##   labs(tag = "g") +
-##   theme(plot.tag.position = c(0.14, 1.02),
-##         plot.tag = element_text(vjust = -0.7, size = tag_label_size, face="bold"))
+p67 = p67 +
+  labs(tag = "g") +
+  theme(plot.tag.position = c(0.14, 1.02),
+        plot.tag = element_text(vjust = -0.7, size = tag_label_size, face="bold"))
 
-## p567 <-
-##   p5 + p67 + plot_layout(ncol = 2, guides = "collect") &
-##   theme(
-##     legend.position = "bottom",
-##     legend.title = element_blank(),
-##     legend.margin = margin(0, 0, 0, 0),
-##     legend.box.margin = margin(-10, 0, -5, 0)
-##   )
+p567 <-
+  p5 + p67 + plot_layout(ncol = 2, guides = "collect") &
+  theme(
+    legend.position = "bottom",
+    legend.title = element_blank(),
+    legend.margin = margin(0, 0, 0, 0),
+    legend.box.margin = margin(-10, 0, -5, 0)
+  )
 
-## p567$patches$plots[[1]] =
-##   p567$patches$plots[[1]] +
-##   labs(tag = "e") +
-##   theme(plot.tag.position = c(0.14, 1.025),
-##         plot.tag = element_text(size = tag_label_size, face="bold"))
+p567$patches$plots[[1]] =
+  p567$patches$plots[[1]] +
+  labs(tag = "e") +
+  theme(plot.tag.position = c(0.14, 1.025),
+        plot.tag = element_text(size = tag_label_size, face="bold"))
 
-## ## plot_grid(p12, p34, p567, nrow=3)
-## ## aligned = align_plots(p34, p567, align = "v")
-## fig2 <- plot_grid(p12, p34, p567, nrow=3, align = "v")
-## ggsave("../doc/figure2.png", width = 6, height = 7.5, units = "in")
+## plot_grid(p12, p34, p567, nrow=3)
+## aligned = align_plots(p34, p567, align = "v")
+fig2 <- plot_grid(p12, p34, p567, nrow=3, align = "v")
+ggsave("results/fig/figure2.png", width = 6, height = 7.5, units = "in")
 
-## ## Rabi - same as above plot, but put in supplementary material
+## Rabi - same as above plot, but put in supplementary material
 
-## ## ####################################################### ##
-## ## ####################################################### ##
-## ##
-## ## Historical change in storage
-## ##
-## ## ####################################################### ##
-## ## ####################################################### ##
+## ####################################################### ##
+## ####################################################### ##
+##
+## Historical change in storage
+##
+## ####################################################### ##
+## ####################################################### ##
 
-## years = 1979:2013
+years = 1979:2013
+output_map_list = list()
+pb = txtProgressBar(min = 0, max = length(years), initial = 0)
+for (i in 1:(length(years)-1)) {
+  year = years[i]
+  recharge_fn = file.path(
+    historical_analysis_dir,
+    sprintf("recharge_historical_%d_irrig.tif", year)
+  )
+  recharge_map = raster(recharge_fn)
+  abstraction_fn = file.path(
+    historical_analysis_dir,
+    sprintf("abstraction_historical_%d_irrig.tif", year)
+  )
+  abstraction_map = raster(abstraction_fn)
+  dS_map = recharge_map - abstraction_map
+  dS_map = resample(dS_map, india_cmd_area)
+  dS_map = dS_map * india_cmd_area
+  output_map_list[[length(output_map_list) + 1]] = dS_map
+  setTxtProgressBar(pb, i)
+}
+close(pb)
+
+## 2a Mean annual net storage change (recharge - abstraction)
+st = stack(output_map_list)
+dS_mean = stackApply(st, indices=rep(1, nlayers(st)), fun=mean)
+p1 <- myplotfun1(dS_mean)
+## p1 <- p1 +
+##   scale_fill_stepsn(
+##     colours = RColorBrewer::brewer.pal(9, "Blues"), # TODO change color scheme
+##     ## breaks = seq(0, 0.5, by=0.025),
+##     ## limits = c(0, 0.5),
+##     ## labels = labelfun,
+##     na.value = "grey"
+##   ) +
+##   theme(legend.key.height = unit(0.2, "cm"), legend.key.width = unit(0.4, "cm"))
+labelfun <- function(x) { ifelse((x %% 0.1) == 0, x, "") }
+breaks <- seq(-0.4, 0.6, 0.01)
+nbreaks <- length(breaks)
+rdbu_pal = RColorBrewer::brewer.pal(9, "RdBu")
+p1 <- p1 +
+  ## geom_sf(data = signif_pts, size = 0.01, shape = 20) +
+  scale_fill_stepsn(
+    colours = rdbu_pal,
+    breaks = breaks,
+    values = scales::rescale(c(-0.4, 0, 0.6)),
+    limits = c(min(breaks), max(breaks)),
+    labels = labelfun,
+    na.value = "grey"
+  ) +
+  theme(
+    legend.position = "bottom"
+  ) +
+  guides(
+    fill = guide_bins(
+      ## title = expression(Mean~Delta~S(m)),
+      title = "Mean annual change in storage (m)",
+      title.position = "top",
+      axis = FALSE,
+      keywidth = grid::unit(fig1_keywidth / nbreaks, "npc"),
+      keyheight = grid::unit(3, "mm")
+    )
+  )
+
+## 2b Trend in annual net storage change (recharge - abstraction)
+st <- stack(output_map_list)
+st <- resample(st, india_cmd_area)
+st <- st * india_cmd_area
+trend <- raster.kendall(st, p.value = TRUE)
+slope <- trend$slope
+pval <- trend$p.value
+signif = pval <= 0.05
+signif_pts = as(signif, "SpatialPointsDataFrame")
+signif_pts = signif_pts[signif_pts$layer > 0,]
+signif_pts = st_as_sf(signif_pts)
+slope = slope * 1000 # meter/year -> mm/year
+p2 <- myplotfun1(slope)
+labelfun <- function(x) { ifelse((x %% 5) == 0, x, "") }
+breaks <- seq(-18, 8, 0.1)
+nbreaks <- length(breaks)
+rdbu_pal = RColorBrewer::brewer.pal(9, "RdBu")
+p2 <- p2 +
+  geom_sf(data = signif_pts, size = 0.01, shape = 20) +
+  scale_fill_stepsn(
+    colours = rdbu_pal,
+    breaks = breaks,
+    values = scales::rescale(c(-18, 0, 8)),
+    limits = c(min(breaks), max(breaks)),
+    labels = labelfun,
+    na.value = "grey"
+  ) +
+  theme(
+    legend.position = "bottom"
+  ) +
+  guides(
+    fill = guide_bins(
+      title = expression(Trend~"in"~annual~storage~change~(mm~y^-1)),
+      title.position = "top",
+      axis = FALSE,
+      keywidth = grid::unit(fig1_keywidth / nbreaks, "npc"),
+      keyheight = grid::unit(3, "mm")
+    )
+  )
+
+## FIXME comment out once working in extract-time-series.R
+## 2c/d/e
 ## output_map_list = list()
-## sprintf("Reading historical irrigation demand maps...")
-## pb = txtProgressBar(min = 0, max = length(years), initial = 0)
-## for (i in 1:(length(years)-1)) {
-##   year = years[i]
-##   recharge_fn = file.path(
-##     historical_analysis_dir,
-##     sprintf("recharge_historical_%d_irrig.tif", year)
-##   )
-##   recharge_map = raster(recharge_fn)
-##   abstraction_fn = file.path(
-##     historical_analysis_dir,
-##     sprintf("abstraction_historical_%d_irrig.tif", year)
-##   )
-##   abstraction_map = raster(abstraction_fn)
-##   dS_map = recharge_map - abstraction_map
-##   dS_map = resample(dS_map, india_cmd_area)
-##   dS_map = dS_map * india_cmd_area
-##   output_map_list[[length(output_map_list) + 1]] = dS_map
-##   setTxtProgressBar(pb, i)
-## }
-## close(pb)
+output_list = list()
+pb = txtProgressBar(min = 0, max = length(years), initial = 0)
+for (i in 1:(length(years)-1)) {
+  year = years[i]
+  ## TODO precipitation output
+  recharge_fn = file.path(
+    historical_analysis_dir,
+    sprintf("recharge_historical_%d_irrig.tif", year)
+  )
+  recharge_map = raster(recharge_fn)
+  abstraction_fn = file.path(
+    historical_analysis_dir,
+    sprintf("abstraction_historical_%d_irrig.tif", year)
+  )
+  abstraction_map = raster(abstraction_fn)
+  dS_map = recharge_map - abstraction_map
+  dS_map = resample(dS_map, india_cmd_area)
+  ## output_map_list[[length(output_map_list) + 1]] = dS_map
+  for (j in 1:length(basins)) {
+    basin = basins[j]
+    recharge_sum = compute_basin_total(recharge_fn, basin_regions[[basin]])
+    abstraction_sum = compute_basin_total(abstraction_fn, basin_regions[[basin]])
+    dS = recharge_sum - abstraction_sum
+    output_list[[length(output_list) + 1]] = data.frame(
+      year=year,
+      basin = basin,
+      volume=dS
+    )
+  }
+  setTxtProgressBar(pb, i)
+}
+close(pb)
 
-## ## 2a Mean annual net storage change (recharge - abstraction)
-## st = stack(output_map_list)
-## dS_mean = stackApply(st, indices=rep(1, nlayers(st)), fun=mean)
-## p1 <- myplotfun1(dS_mean)
-## ## p1 <- p1 +
-## ##   scale_fill_stepsn(
-## ##     colours = RColorBrewer::brewer.pal(9, "Blues"), # TODO change color scheme
-## ##     ## breaks = seq(0, 0.5, by=0.025),
-## ##     ## limits = c(0, 0.5),
-## ##     ## labels = labelfun,
-## ##     na.value = "grey"
-## ##   ) +
-## ##   theme(legend.key.height = unit(0.2, "cm"), legend.key.width = unit(0.4, "cm"))
-## labelfun <- function(x) { ifelse((x %% 0.1) == 0, x, "") }
-## breaks <- seq(-0.4, 0.6, 0.01)
-## nbreaks <- length(breaks)
-## rdbu_pal = RColorBrewer::brewer.pal(9, "RdBu")
-## p1 <- p1 +
-##   ## geom_sf(data = signif_pts, size = 0.01, shape = 20) +
-##   scale_fill_stepsn(
-##     colours = rdbu_pal,
-##     breaks = breaks,
-##     values = scales::rescale(c(-0.4, 0, 0.6)),
-##     limits = c(min(breaks), max(breaks)),
-##     labels = labelfun,
-##     na.value = "grey"
-##   ) +
-##   theme(
-##     legend.position = "bottom"
-##   ) +
-##   guides(
-##     fill = guide_bins(
-##       ## title = expression(Mean~Delta~S(m)),
-##       title = "Mean annual change in storage (m)",
-##       title.position = "top",
-##       axis = FALSE,
-##       keywidth = grid::unit(fig1_keywidth / nbreaks, "npc"),
-##       keyheight = grid::unit(3, "mm")
-##     )
-##   )
+output = do.call("rbind", output_list) %>% as_tibble()
+xx = output %>% arrange(year)
 
-## ## 2b Trend in annual net storage change (recharge - abstraction)
-## st <- stack(output_map_list)
-## st <- resample(st, india_cmd_area)
-## st <- st * india_cmd_area
-## trend <- raster.kendall(st, p.value = TRUE)
-## slope <- trend$slope
-## pval <- trend$p.value
-## signif = pval <= 0.05
-## signif_pts = as(signif, "SpatialPointsDataFrame")
-## signif_pts = signif_pts[signif_pts$layer > 0,]
-## signif_pts = st_as_sf(signif_pts)
-## slope = slope * 1000 # meter/year -> mm/year
-## p2 <- myplotfun1(slope)
-## labelfun <- function(x) { ifelse((x %% 5) == 0, x, "") }
-## breaks <- seq(-18, 8, 0.1)
-## nbreaks <- length(breaks)
-## rdbu_pal = RColorBrewer::brewer.pal(9, "RdBu")
-## p2 <- p2 +
-##   geom_sf(data = signif_pts, size = 0.01, shape = 20) +
-##   scale_fill_stepsn(
-##     colours = rdbu_pal,
-##     breaks = breaks,
-##     values = scales::rescale(c(-18, 0, 8)),
-##     limits = c(min(breaks), max(breaks)),
-##     labels = labelfun,
-##     na.value = "grey"
-##   ) +
-##   theme(
-##     legend.position = "bottom"
-##   ) +
-##   guides(
-##     fill = guide_bins(
-##       title = expression(Trend~"in"~annual~storage~change~(mm~y^-1)),
-##       title.position = "top",
-##       axis = FALSE,
-##       keywidth = grid::unit(fig1_keywidth / nbreaks, "npc"),
-##       keyheight = grid::unit(3, "mm")
-##     )
-##   )
+xx_igp = xx %>% filter(basin %in% "igp")
+p3 <- myplotfun2(xx_igp)
+p3 <-
+  p3 +
+  scale_y_continuous(
+    name = "\u0394 Storage (m)",
+    limits = c(-0.3, 0.3)
+  )
 
-## ## 2c/d/e
-## ## output_map_list = list()
-## output_list = list()
-## pb = txtProgressBar(min = 0, max = length(years), initial = 0)
-## for (i in 1:(length(years)-1)) {
-##   year = years[i]
-##   ## TODO precipitation output
-##   recharge_fn = file.path(
-##     historical_analysis_dir,
-##     sprintf("recharge_historical_%d_irrig.tif", year)
-##   )
-##   recharge_map = raster(recharge_fn)
-##   abstraction_fn = file.path(
-##     historical_analysis_dir,
-##     sprintf("abstraction_historical_%d_irrig.tif", year)
-##   )
-##   abstraction_map = raster(abstraction_fn)
-##   dS_map = recharge_map - abstraction_map
-##   dS_map = resample(dS_map, india_cmd_area)
-##   ## output_map_list[[length(output_map_list) + 1]] = dS_map
-##   for (j in 1:length(basins)) {
-##     basin = basins[j]
-##     recharge_sum = compute_basin_total(recharge_fn, basin_regions[[basin]])
-##     abstraction_sum = compute_basin_total(abstraction_fn, basin_regions[[basin]])
-##     dS = recharge_sum - abstraction_sum
-##     output_list[[length(output_list) + 1]] = data.frame(
-##       year=year,
-##       basin = basin,
-##       volume=dS
-##     )
-##   }
-##   setTxtProgressBar(pb, i)
-## }
-## close(pb)
+xx_igp_west = xx %>% filter(basin %in% "igp_east")
+p4 <- myplotfun2(xx_igp_west)
+p4 <-
+  p4 +
+  scale_y_continuous(
+    name = "\u0394 Storage (m)",
+    limits = c(-0.3, 0.3)
+  )
 
-## output = do.call("rbind", output_list) %>% as_tibble()
-## xx = output %>% arrange(year)
+xx_igp_east = xx %>% filter(basin %in% "igp_west")
+p5 <- myplotfun2(xx_igp_east)
+p5 <-
+  p5 +
+  scale_y_continuous(
+    name = "\u0394 Storage (m)",
+    limits = c(-0.3, 0.3)
+  )
 
-## xx_igp = xx %>% filter(basin %in% "igp")
-## p3 <- myplotfun2(xx_igp)
-## p3 <-
-##   p3 +
-##   scale_y_continuous(
-##     name = "\u0394 Storage (m)",
-##     limits = c(-0.3, 0.3)
-##   )
+p4 <- p4 + theme(axis.text.y = element_blank())
+p5 <- p5 + theme(axis.text.y = element_blank())
 
-## xx_igp_west = xx %>% filter(basin %in% "igp_east")
-## p4 <- myplotfun2(xx_igp_west)
-## p4 <-
-##   p4 +
-##   scale_y_continuous(
-##     name = "\u0394 Storage (m)",
-##     limits = c(-0.3, 0.3)
-##   )
+## Combine panels
+p12 <-
+  p1 + p2 + plot_layout(ncol = 2, guides = "keep") &
+  theme(
+    legend.position = "bottom",
+    legend.margin = margin(0, 0, 0, 0),
+    legend.box.margin = margin(-10, 0, -5, 0)
+  )
 
-## xx_igp_east = xx %>% filter(basin %in% "igp_west")
-## p5 <- myplotfun2(xx_igp_east)
-## p5 <-
-##   p5 +
-##   scale_y_continuous(
-##     name = "\u0394 Storage (m)",
-##     limits = c(-0.3, 0.3)
-##   )
+p45 <- p4 + p5 + plot_layout(nrow = 2)
 
-## p4 <- p4 + theme(axis.text.y = element_blank())
-## p5 <- p5 + theme(axis.text.y = element_blank())
+p12$patches$plots[[1]] =
+  p12$patches$plots[[1]] +
+  labs(tag = "a") +
+  theme(plot.tag.position = c(0.14, 1.035),
+        plot.tag = element_text(size = tag_label_size, face="bold"))
+p12 = p12 +
+  labs(tag = "b") +
+  theme(plot.tag.position = c(0.14, 1),
+        plot.tag = element_text(vjust = -0.7, size = tag_label_size, face="bold"))
 
-## ## Combine panels
-## p12 <-
-##   p1 + p2 + plot_layout(ncol = 2, guides = "keep") &
-##   theme(
-##     legend.position = "bottom",
-##     legend.margin = margin(0, 0, 0, 0),
-##     legend.box.margin = margin(-10, 0, -5, 0)
-##   )
+p45$patches$plots[[1]] =
+  p45$patches$plots[[1]] +
+  labs(tag = "d") +
+  theme(plot.tag.position = c(0.14, 1.06),
+        plot.tag = element_text(size = tag_label_size, face="bold"))
 
-## p45 <- p4 + p5 + plot_layout(nrow = 2)
+p45 = p45 +
+  labs(tag = "e") +
+  theme(plot.tag.position = c(0.14, 1.02),
+        plot.tag = element_text(vjust = -0.7, size = tag_label_size, face="bold"))
 
-## p12$patches$plots[[1]] =
-##   p12$patches$plots[[1]] +
-##   labs(tag = "a") +
-##   theme(plot.tag.position = c(0.14, 1.035),
-##         plot.tag = element_text(size = tag_label_size, face="bold"))
-## p12 = p12 +
-##   labs(tag = "b") +
-##   theme(plot.tag.position = c(0.14, 1),
-##         plot.tag = element_text(vjust = -0.7, size = tag_label_size, face="bold"))
+p345 <-
+  p3 + p45 + plot_layout(ncol = 2, guides = "collect") &
+  theme(
+    legend.position = "bottom",
+    legend.title = element_blank(),
+    legend.margin = margin(0, 0, 0, 0),
+    legend.box.margin = margin(-10, 0, -5, 0)
+  )
 
-## p45$patches$plots[[1]] =
-##   p45$patches$plots[[1]] +
-##   labs(tag = "d") +
-##   theme(plot.tag.position = c(0.14, 1.06),
-##         plot.tag = element_text(size = tag_label_size, face="bold"))
+p345$patches$plots[[1]] =
+  p345$patches$plots[[1]] +
+  labs(tag = "c") +
+  theme(plot.tag.position = c(0.14, 1.025),
+        plot.tag = element_text(size = tag_label_size, face="bold"))
 
-## p45 = p45 +
-##   labs(tag = "e") +
-##   theme(plot.tag.position = c(0.14, 1.02),
-##         plot.tag = element_text(vjust = -0.7, size = tag_label_size, face="bold"))
+fig3 <- plot_grid(p12, p345, nrow=2, align = "v")
+ggsave("results/fig/figure3.png", width = 6, height = 5, units = "in")
 
-## p345 <-
-##   p3 + p45 + plot_layout(ncol = 2, guides = "collect") &
-##   theme(
-##     legend.position = "bottom",
-##     legend.title = element_blank(),
-##     legend.margin = margin(0, 0, 0, 0),
-##     legend.box.margin = margin(-10, 0, -5, 0)
-##   )
+## ####################################################### ##
+## ####################################################### ##
+##
+## Activated Ganges water machine
+##
+## ####################################################### ##
+## ####################################################### ##
 
-## p345$patches$plots[[1]] =
-##   p345$patches$plots[[1]] +
-##   labs(tag = "c") +
-##   theme(plot.tag.position = c(0.14, 1.025),
-##         plot.tag = element_text(size = tag_label_size, face="bold"))
+## This is a counterfactual simulation to evaluate the potential
+## impact of canal restoration on the historical water balace
+## Use results from "JULES_vn6.1_irrig_current" to compare
+## policies "current_canal" AND "restored_canal"
 
-## fig3 <- plot_grid(p12, p345, nrow=2, align = "v")
-## ggsave("../doc/figure3.png", width = 6, height = 5, units = "in")
+current_canal_area = raster(
+  file.path(
+    "results/irrigated_area_maps",
+    "icrisat_kharif_canal_2010_india_0.500000Deg_current_canal.tif"
+  )
+)
+current_canal_area = resample(current_canal_area, india, method = "ngb")
+current_canal_area = current_canal_area * india_cmd_area
 
-## ## ####################################################### ##
-## ## ####################################################### ##
-## ##
-## ## Activated Ganges water machine
-## ##
-## ## ####################################################### ##
-## ## ####################################################### ##
+restored_canal_area = raster(
+  file.path(
+    "results/irrigated_area_maps",
+    "icrisat_kharif_canal_2010_india_0.500000Deg_restored_canal.tif"
+  )
+)
+restored_canal_area = resample(restored_canal_area, india, method = "ngb")
+restored_canal_area = restored_canal_area * india_cmd_area
 
-## ## This is a counterfactual simulation to evaluate the potential
-## ## impact of canal restoration on the historical water balace
-## ## Use results from "JULES_vn6.1_irrig_current" to compare
-## ## policies "current_canal" AND "restored_canal"
+max_canal_area <- max(cellStats(current_canal_area, max), cellStats(restored_canal_area, max))
 
-## ## TESTING
-## ## r1 <- raster("../data/irrigated_area_maps/icrisat_kharif_canal_2010_india_0.500000Deg_current_canal.tif")
-## ## r2 <- raster("../data/irrigated_area_maps/icrisat_kharif_canal_2010_india_0.500000Deg_restored_canal.tif")
-## ## r3 <- raster("../data/irrigated_area_maps/icrisat_kharif_tubewells_2010_india_0.500000Deg_restored_canal.tif")
-## ## r4 <- raster("../data/irrigated_area_maps/icrisat_kharif_tubewells_2010_india_0.500000Deg_current_canal.tif")
+p1 <- myplotfun1(current_canal_area)
+labelfun <- function(x) { ifelse((x %% 0.1) == 0, x, "") }
+breaks <- seq(0, 0.75, by=0.01)
+nbreaks <- length(breaks)
+p1 <- p1 +
+  scale_fill_stepsn(
+    colours = RColorBrewer::brewer.pal(9, "Blues"),
+    breaks = breaks,
+    limits = c(min(breaks), max(breaks)),
+    labels = labelfun,
+    na.value = "grey"
+  ) +
+  theme(
+    legend.position = "bottom"
+  ) +
+  guides(
+    fill = guide_bins(
+      title = expression(Fractional~area), #Depth~(m)),
+      ## title = expression(Depth~(m)),
+      title.position = "top",
+      axis = FALSE,
+      keywidth = grid::unit(fig1_keywidth / nbreaks, "npc"),
+      keyheight = grid::unit(3, "mm")
+    )
+  )
 
-## current_canal_area = raster(
-##   file.path(
-##     "../data/irrigated_area_maps",
-##     "icrisat_kharif_canal_2010_india_0.500000Deg_current_canal.tif"
-##   )
-## )
-## current_canal_area = resample(current_canal_area, india, method = "ngb")
-## current_canal_area = current_canal_area * india_cmd_area
+p2 <- myplotfun1(restored_canal_area)
+labelfun <- function(x) { ifelse((x %% 0.1) == 0, x, "") }
+breaks <- seq(0, 0.6, by=0.01)
+nbreaks <- length(breaks)
+p2 <- p2 +
+  scale_fill_stepsn(
+    colours = RColorBrewer::brewer.pal(9, "Blues"),
+    breaks = breaks,
+    limits = c(min(breaks), max(breaks)),
+    labels = labelfun,
+    na.value = "grey"
+  ) +
+  theme(
+    legend.position = "bottom"
+  ) +
+  guides(
+    fill = guide_bins(
+      title = expression(Fractional~canal~irrigated~area), #Depth~(m)),
+      ## title = expression(Depth~(m)),
+      title.position = "top",
+      axis = FALSE,
+      keywidth = grid::unit(fig1_keywidth / nbreaks, "npc"),
+      keyheight = grid::unit(3, "mm")
+    )
+  )
+## plot(stack(r1,r2,r3))
+## compareRaster(r2,r3,values=TRUE)
+## r1 <- resample(r1, india_cmd_area)
+## r1 <- r1 * india_cmd_area
+## plot(r1)
+## r2 <- resample(r2, india_cmd_area)
+## r2 <- r2 * india_cmd_area
+## plot(r2)
+## r3 <- resample(r3, india_cmd_area)
+## r3 <- r3 * india_cmd_area
+## plot(r3)
+## r4 <- resample(r4, india_cmd_area)
+## r4 <- r4 * india_cmd_area
+## plot(r4)
 
-## restored_canal_area = raster(
-##   file.path(
-##     "../data/irrigated_area_maps",
-##     "icrisat_kharif_canal_2010_india_0.500000Deg_restored_canal.tif"
-##   )
-## )
-## restored_canal_area = resample(restored_canal_area, india, method = "ngb")
-## restored_canal_area = restored_canal_area * india_cmd_area
+## current_canal_analysis_dir = "../data/analysis_old/current_canal"
+## restored_canal_analysis_dir = "../data/analysis_old/restored_canal"
 
-## max_canal_area <- max(cellStats(current_canal_area, max), cellStats(restored_canal_area, max))
+output_list = list()
+current_output_map_list = list()
+restored_output_map_list = list()
+pb = txtProgressBar(min = 0, max = length(years) - 1, initial = 0)
+for (i in 1:(length(years)-1)) {
+  year = years[i]
+  ## Change in storage under current canal area
+  current_abstraction_fn = file.path(
+    "results/JULES_vn6.1_irrig_current",
+    sprintf("abstraction_current_canal_%s_irrig.tif", year)
+  )
 
-## p1 <- myplotfun1(current_canal_area)
-## labelfun <- function(x) { ifelse((x %% 0.1) == 0, x, "") }
-## breaks <- seq(0, 0.75, by=0.01)
-## nbreaks <- length(breaks)
-## p1 <- p1 +
-##   scale_fill_stepsn(
-##     colours = RColorBrewer::brewer.pal(9, "Blues"),
-##     breaks = breaks,
-##     limits = c(min(breaks), max(breaks)),
-##     labels = labelfun,
-##     na.value = "grey"
-##   ) +
-##   theme(
-##     legend.position = "bottom"
-##   ) +
-##   guides(
-##     fill = guide_bins(
-##       title = expression(Fractional~area), #Depth~(m)),
-##       ## title = expression(Depth~(m)),
-##       title.position = "top",
-##       axis = FALSE,
-##       keywidth = grid::unit(fig1_keywidth / nbreaks, "npc"),
-##       keyheight = grid::unit(3, "mm")
-##     )
-##   )
+  current_recharge_fn = file.path(
+    "results/JULES_vn6.1_irrig_current",
+    sprintf("recharge_current_canal_%s_irrig.tif", year)
+  )
+  current_abstraction_map = raster(current_abstraction_fn)
+  current_recharge_map = raster(current_recharge_fn)
+  dS_current_map = current_recharge_map - current_abstraction_map
+  dS_current_map = resample(dS_current_map, india_cmd_area)
+  dS_current_map = dS_current_map * india_cmd_area
 
-## p2 <- myplotfun1(restored_canal_area)
-## labelfun <- function(x) { ifelse((x %% 0.1) == 0, x, "") }
-## breaks <- seq(0, 0.6, by=0.01)
-## nbreaks <- length(breaks)
-## p2 <- p2 +
-##   scale_fill_stepsn(
-##     colours = RColorBrewer::brewer.pal(9, "Blues"),
-##     breaks = breaks,
-##     limits = c(min(breaks), max(breaks)),
-##     labels = labelfun,
-##     na.value = "grey"
-##   ) +
-##   theme(
-##     legend.position = "bottom"
-##   ) +
-##   guides(
-##     fill = guide_bins(
-##       title = expression(Fractional~canal~irrigated~area), #Depth~(m)),
-##       ## title = expression(Depth~(m)),
-##       title.position = "top",
-##       axis = FALSE,
-##       keywidth = grid::unit(fig1_keywidth / nbreaks, "npc"),
-##       keyheight = grid::unit(3, "mm")
-##     )
-##   )
-## ## plot(stack(r1,r2,r3))
-## ## compareRaster(r2,r3,values=TRUE)
-## ## r1 <- resample(r1, india_cmd_area)
-## ## r1 <- r1 * india_cmd_area
-## ## plot(r1)
-## ## r2 <- resample(r2, india_cmd_area)
-## ## r2 <- r2 * india_cmd_area
-## ## plot(r2)
-## ## r3 <- resample(r3, india_cmd_area)
-## ## r3 <- r3 * india_cmd_area
-## ## plot(r3)
-## ## r4 <- resample(r4, india_cmd_area)
-## ## r4 <- r4 * india_cmd_area
-## ## plot(r4)
+  ## Change in storage under restored canal area
+  restored_abstraction_fn = file.path(
+    "results/JULES_vn6.1_irrig_current",
+    sprintf("abstraction_restored_canal_%s_irrig.tif", year)
+  )
+  restored_recharge_fn = file.path(
+    "results/JULES_vn6.1_irrig_current",
+    sprintf("recharge_restored_canal_%s_irrig.tif", year)
+  )
+  restored_abstraction_map = raster(restored_abstraction_fn)
+  restored_recharge_map = raster(restored_recharge_fn)
+  dS_restored_map = restored_recharge_map - restored_abstraction_map
+  dS_restored_map = resample(dS_restored_map, india_cmd_area)
+  dS_restored_map = dS_restored_map * india_cmd_area
 
-## ## current_canal_analysis_dir = "../data/analysis_old/current_canal"
-## ## restored_canal_analysis_dir = "../data/analysis_old/restored_canal"
+  current_output_map_list[[length(current_output_map_list) + 1]] = dS_current_map
+  restored_output_map_list[[length(restored_output_map_list) + 1]] = dS_restored_map
 
-## output_list = list()
-## current_output_map_list = list()
-## restored_output_map_list = list()
-## pb = txtProgressBar(min = 0, max = length(years) - 1, initial = 0)
-## for (i in 1:(length(years)-1)) {
-##   year = years[i]
-##   ## Change in storage under current canal area
-##   current_abstraction_fn = file.path(
-##     current_canal_analysis_dir,
-##     sprintf("abstraction_current_canal_%s_irrig.tif", year)
-##   )
+  for (m in 1:length(basins)) {
+    basin = basins[m]
+    current_abstraction_sum = compute_basin_total(current_abstraction_fn, basin_regions[[basin]])
+    current_recharge_sum = compute_basin_total(current_recharge_fn, basin_regions[[basin]])
+    dS_current = current_recharge_sum - current_abstraction_sum
+    restored_recharge_sum = compute_basin_total(restored_recharge_fn, basin_regions[[basin]])
+    restored_abstraction_sum = compute_basin_total(restored_abstraction_fn, basin_regions[[basin]])
+    dS_restored = restored_recharge_sum - restored_abstraction_sum
+    ## Add to data frame
+    output_list[[length(output_list) + 1]] = data.frame(
+      year = year,
+      basin = basin,
+      policy = c("current", "restored"),
+      dS = c(dS_current, dS_restored),
+      abstraction = c(current_abstraction_sum, restored_abstraction_sum),
+      recharge = c(current_recharge_sum, restored_recharge_sum)
+    )
+  }
+  setTxtProgressBar(pb, i)
+}
+close(pb)
 
-##   current_recharge_fn = file.path(
-##     current_canal_analysis_dir,
-##     sprintf("recharge_current_canal_%s_irrig.tif", year)
-##   )
-##   current_abstraction_map = raster(current_abstraction_fn)
-##   current_recharge_map = raster(current_recharge_fn)
-##   dS_current_map = current_recharge_map - current_abstraction_map
-##   dS_current_map = resample(dS_current_map, india_cmd_area)
-##   dS_current_map = dS_current_map * india_cmd_area
+output =
+  do.call("rbind", output_list) %>%
+  as_tibble() %>%
+  mutate(volume = recharge - abstraction)
 
-##   ## Change in storage under restored canal area
-##   restored_abstraction_fn = file.path(
-##     restored_canal_analysis_dir,
-##     sprintf("abstraction_restored_canal_%s_irrig.tif", year)
-##   )
-##   restored_recharge_fn = file.path(
-##     restored_canal_analysis_dir,
-##     sprintf("recharge_restored_canal_%s_irrig.tif", year)
-##   )
-##   restored_abstraction_map = raster(restored_abstraction_fn)
-##   restored_recharge_map = raster(restored_recharge_fn)
-##   dS_restored_map = restored_recharge_map - restored_abstraction_map
-##   dS_restored_map = resample(dS_restored_map, india_cmd_area)
-##   dS_restored_map = dS_restored_map * india_cmd_area
+precip_mean = stackApply(precip_maps, rep(1, nlayers(precip_maps)), mean)
+aridity_mean = stackApply(aridity_maps, rep(1, nlayers(precip_maps)), mean)
 
-##   current_output_map_list[[length(current_output_map_list) + 1]] = dS_current_map
-##   restored_output_map_list[[length(restored_output_map_list) + 1]] = dS_restored_map
+dS_current_mean =
+  raster::stack(current_output_map_list) %>%
+  stackApply(rep(1, length(current_output_map_list)), mean)
 
-##   for (m in 1:length(basins)) {
-##     basin = basins[m]
-##     current_abstraction_sum = compute_basin_total(current_abstraction_fn, basin_regions[[basin]])
-##     current_recharge_sum = compute_basin_total(current_recharge_fn, basin_regions[[basin]])
-##     dS_current = current_recharge_sum - current_abstraction_sum
-##     restored_recharge_sum = compute_basin_total(restored_recharge_fn, basin_regions[[basin]])
-##     restored_abstraction_sum = compute_basin_total(restored_abstraction_fn, basin_regions[[basin]])
-##     dS_restored = restored_recharge_sum - restored_abstraction_sum
-##     ## Add to data frame
-##     output_list[[length(output_list) + 1]] = data.frame(
-##       year = year,
-##       basin = basin,
-##       policy = c("current", "restored"),
-##       dS = c(dS_current, dS_restored),
-##       abstraction = c(current_abstraction_sum, restored_abstraction_sum),
-##       recharge = c(current_recharge_sum, restored_recharge_sum)
-##     )
-##   }
-##   setTxtProgressBar(pb, i)
-## }
-## close(pb)
+dS_restored_mean =
+  raster::stack(restored_output_map_list) %>%
+  stackApply(rep(1, length(restored_output_map_list)), mean)
 
-## output =
-##   do.call("rbind", output_list) %>%
-##   as_tibble() %>%
-##   mutate(volume = recharge - abstraction)
+## irrigated area [same for restored/current]
+irr_area_fs = list.files(
+  "results/irrigated_area_maps",
+  pattern = "icrisat_kharif_(.*)_2010_india_0.500000Deg_current_canal.tif",
+  full.names = TRUE)
+irr_area = stack(irr_area_fs) %>% stackApply(rep(1, 5), sum)
+irr_area = resample(irr_area, india_cmd_area)
+irr_area = irr_area * india_cmd_area
 
-## precip_mean = stackApply(precip_maps, rep(1, nlayers(precip_maps)), mean)
-## aridity_mean = stackApply(aridity_maps, rep(1, nlayers(precip_maps)), mean)
+df = stack(list(aridity = aridity_mean,
+                precip = precip_mean,
+                dS_current = dS_current_mean,
+                dS_restored = dS_restored_mean,
+                irr_area = irr_area)) %>%
+  as.data.frame(xy = TRUE) %>%
+  na.omit() %>%
+  as.tibble() %>%
+  filter(irr_area >= 0.25)
 
-## dS_current_mean =
-##   raster::stack(current_output_map_list) %>%
-##   stackApply(rep(1, length(current_output_map_list)), mean)
 
-## dS_restored_mean =
-##   raster::stack(restored_output_map_list) %>%
-##   stackApply(rep(1, length(restored_output_map_list)), mean)
+## Size of the point could also be related to the increase in canal area in the grid cell
+sf <- 0.5
+df_sampled <- df[sample(1:nrow(df), floor(nrow(df) * sf)) %>% sort,]
+p3 <- myplotfun5(df_sampled)
+p3 <- p3 +
+  theme(
+    legend.position = "bottom"
+  ) +
+  scale_x_continuous(
+    name = "\u0394 Storage (m)",
+  ) +
+  scale_y_continuous(
+    name = "Aridity (-)"#,
+    ## limits = c(0.2, 1.4)
+  ) +
+  guides(
+    size = guide_legend(
+      title = expression(Fractional~irrigated~area),
+      title.position = "top"#,
+      ## axis = FALSE#,
+      ## keywidth = grid::unit(fig1_keywidth / nbreaks, "npc"),
+      ## keyheight = grid::unit(3, "mm")
+    )
+  )
 
-## ## irrigated area [same for restored/current]
-## irr_area_fs = list.files(
-##   "../data/irrigated_area_maps",
-##   pattern = "icrisat_kharif_(.*)_2010_india_0.500000Deg_current_canal.tif",
-##   full.names = TRUE)
-## irr_area = stack(irr_area_fs) %>% stackApply(rep(1, 5), sum)
-## irr_area = resample(irr_area, india_cmd_area)
-## irr_area = irr_area * india_cmd_area
+## xx = output %>% pivot_longer(all_of(c("dS", "abstraction", "recharge"))) %>% arrange(year)
+xx =
+  scale_x_continuous(
+  scale_x_continuous(
+    name = "\u0394 Storage (m)",
+  )
+    name = "\u0394 Storage (m)",
+  )
+  output %>%
+  arrange(year) #%>%
+  ## mutate(policy = factor(policy, levels = c("current", "restored"), labels = c("Current", "Restored")))
 
-## df = stack(list(aridity = aridity_mean,
-##                 precip = precip_mean,
-##                 dS_current = dS_current_mean,
-##                 dS_restored = dS_restored_mean,
-##                 irr_area = irr_area)) %>%
-##   as.data.frame(xy = TRUE) %>%
-##   na.omit() %>%
-##   as.tibble() %>%
-##   filter(irr_area >= 0.25)
+xx_igp = xx %>% filter(basin %in% "igp")
+p4 <- myplotfun3(xx_igp)
+p4 <- p4 +
+  scale_y_continuous(
+    name = "\u0394 Storage (m)",
+    limits = c(-0.3, 0.3)
+  )
 
-## library(ggnewscale)
-## myplotfun4 <- function(x, ...) {
-##   ## p = ggplot(x, aes(x=dS_current, y=precip, size=irr_area, color=x)) +
-##   blues_pal = colorRampPalette(brewer.pal(9, "Blues"))
-##   reds_pal = colorRampPalette(brewer.pal(9, "Reds"))
-##   p = ggplot(data = x, aes(x=dS_current, y=aridity, size=irr_area)) +
-##     geom_point(
-##       shape = 1,
-##       color = "grey60"
-##     ) +
-##     geom_point(
-##       data = x,
-##       aes(
-##         x=dS_restored,
-##         y=aridity,
-##         size=irr_area#,
-##         ## color=x
-##       ),
-##       color = "grey10",
-##       shape = 1,
-##       stroke = 0.1
-##     ) +
-##     xlim(c(-0.5, 0.5)) +
-##     theme_bw() +
-##     theme(panel.grid = element_blank(),
-##           axis.text.x = element_text(size = axis_label_size),
-##           axis.text.y = element_text(size = axis_label_size),
-##           axis.title.x = element_text(size = axis_title_size),
-##           axis.title.y = element_text(size = axis_title_size),
-##           legend.title = element_text(size = legend_title_size),
-##           legend.text = element_text(size = legend_label_size))
-##   p
-## }
+xx_igp_east = xx %>% filter(basin %in% "igp_east")
+p5 <- myplotfun3(xx_igp_east)
+p5 <- p5 +
+  scale_y_continuous(
+    name = "\u0394 Storage (m)",
+    limits = c(-0.3, 0.3)
+  )
 
-## ## Size of the point could also be related to the increase in canal area in the grid cell
-## sf <- 0.5
-## df_sampled <- df[sample(1:nrow(df), floor(nrow(df) * sf)) %>% sort,]
-## p3 <- myplotfun4(df_sampled)
-## p3 <- p3 +
-##   theme(
-##     legend.position = "bottom"
-##   ) +
-##   scale_x_continuous(
-##     name = "\u0394 Storage (m)",
-##   ) +
-##   scale_y_continuous(
-##     name = "Aridity (-)"#,
-##     ## limits = c(0.2, 1.4)
-##   ) +
-##   guides(
-##     size = guide_legend(
-##       title = expression(Fractional~irrigated~area),
-##       title.position = "top"#,
-##       ## axis = FALSE#,
-##       ## keywidth = grid::unit(fig1_keywidth / nbreaks, "npc"),
-##       ## keyheight = grid::unit(3, "mm")
-##     )
-##   )
+xx_igp_west = xx %>% filter(basin %in% "igp_west")
+p6 <- myplotfun3(xx_igp_west)
+p6 <- p6 +
+  scale_y_continuous(
+    name = "\u0394 Storage (m)",
+    limits = c(-0.3, 0.3)
+  )
 
-## ## xx = output %>% pivot_longer(all_of(c("dS", "abstraction", "recharge"))) %>% arrange(year)
-## xx =
-##   scale_x_continuous(
-##   scale_x_continuous(
-##     name = "\u0394 Storage (m)",
-##   )
-##     name = "\u0394 Storage (m)",
-##   )
-##   output %>%
-##   arrange(year) #%>%
-##   ## mutate(policy = factor(policy, levels = c("current", "restored"), labels = c("Current", "Restored")))
+p1 <- p1 + theme(legend.position = "none", axis.text.x = element_blank())
+p12 <- p1 + p2 + plot_layout(nrow = 2)
 
-## xx_igp = xx %>% filter(basin %in% "igp")
-## p4 <- myplotfun3(xx_igp)
-## p4 <- p4 +
-##   scale_y_continuous(
-##     name = "\u0394 Storage (m)",
-##     limits = c(-0.3, 0.3)
-##   )
+p56 <- p5 + p6 + plot_layout(nrow = 2)
 
-## xx_igp_east = xx %>% filter(basin %in% "igp_east")
-## p5 <- myplotfun3(xx_igp_east)
-## p5 <- p5 +
-##   scale_y_continuous(
-##     name = "\u0394 Storage (m)",
-##     limits = c(-0.3, 0.3)
-##   )
+p12$patches$plots[[1]] =
+  p12$patches$plots[[1]] +
+  labs(tag = "a") +
+  theme(plot.tag.position = c(0.14, 1.035),
+        plot.tag = element_text(size = tag_label_size, face="bold"))
+p12 = p12 +
+  labs(tag = "b") +
+  theme(plot.tag.position = c(0.14, 1),
+        plot.tag = element_text(vjust = -0.7, size = tag_label_size, face="bold"))
 
-## xx_igp_west = xx %>% filter(basin %in% "igp_west")
-## p6 <- myplotfun3(xx_igp_west)
-## p6 <- p6 +
-##   scale_y_continuous(
-##     name = "\u0394 Storage (m)",
-##     limits = c(-0.3, 0.3)
-##   )
+p56$patches$plots[[1]] =
+  p56$patches$plots[[1]] +
+  labs(tag = "f") +
+  theme(plot.tag.position = c(0.14, 1.06),
+        plot.tag = element_text(size = tag_label_size, face="bold"))
 
-## p1 <- p1 + theme(legend.position = "none", axis.text.x = element_blank())
-## p12 <- p1 + p2 + plot_layout(nrow = 2)
+p56 = p56 +
+  labs(tag = "g") +
+  theme(plot.tag.position = c(0.14, 1.02),
+        plot.tag = element_text(vjust = -0.7, size = tag_label_size, face="bold"))
 
-## p56 <- p5 + p6 + plot_layout(nrow = 2)
+p123 <- p12 | p3 #+ #plot_layout(guides = "keep")
 
-## p12$patches$plots[[1]] =
-##   p12$patches$plots[[1]] +
-##   labs(tag = "a") +
-##   theme(plot.tag.position = c(0.14, 1.035),
-##         plot.tag = element_text(size = tag_label_size, face="bold"))
-## p12 = p12 +
-##   labs(tag = "b") +
-##   theme(plot.tag.position = c(0.14, 1),
-##         plot.tag = element_text(vjust = -0.7, size = tag_label_size, face="bold"))
+p456 <-
+  p4 + p56 + plot_layout(ncol = 2, guides = "collect") &
+  theme(
+    legend.position = "bottom",
+    legend.title = element_blank(),
+    legend.margin = margin(0, 0, 0, 0),
+    legend.box.margin = margin(-10, 0, -5, 0)
+  )
 
-## p56$patches$plots[[1]] =
-##   p56$patches$plots[[1]] +
-##   labs(tag = "f") +
-##   theme(plot.tag.position = c(0.14, 1.06),
-##         plot.tag = element_text(size = tag_label_size, face="bold"))
+p123 = p123 +
+  labs(tag = "c") +
+  theme(plot.tag.position = c(0.14, 1.025),
+        plot.tag = element_text(size = tag_label_size, face="bold"))
 
-## p56 = p56 +
-##   labs(tag = "g") +
-##   theme(plot.tag.position = c(0.14, 1.02),
-##         plot.tag = element_text(vjust = -0.7, size = tag_label_size, face="bold"))
+p456$patches$plots[[1]] =
+  p456$patches$plots[[1]] +
+  labs(tag = "d") +
+  theme(plot.tag.position = c(0.14, 1.025),
+        plot.tag = element_text(size = tag_label_size, face="bold"))
 
-## p123 <- p12 | p3 #+ #plot_layout(guides = "keep")
+fig4 <- plot_grid(p123, p456, nrow=2, align = "v", rel_heights = c(1, 0.75))
+ggsave("results/fig/figure4.png", width = 6, height = 7, units = "in")
 
-## p456 <-
-##   p4 + p56 + plot_layout(ncol = 2, guides = "collect") &
-##   theme(
-##     legend.position = "bottom",
-##     legend.title = element_blank(),
-##     legend.margin = margin(0, 0, 0, 0),
-##     legend.box.margin = margin(-10, 0, -5, 0)
-##   )
+## ####################################################### ##
+## ####################################################### ##
+##
+## Figure X: Water balance under current and potential
+## (climate change)
+##
+## ####################################################### ##
+## ####################################################### ##
 
-## p123 = p123 +
-##   labs(tag = "c") +
-##   theme(plot.tag.position = c(0.14, 1.025),
-##         plot.tag = element_text(size = tag_label_size, face="bold"))
+## The same as above, except using future climate change
+## scenarios from Pradeep
 
-## p456$patches$plots[[1]] =
-##   p456$patches$plots[[1]] +
-##   labs(tag = "d") +
-##   theme(plot.tag.position = c(0.14, 1.025),
-##         plot.tag = element_text(size = tag_label_size, face="bold"))
-
-## fig4 <- plot_grid(p123, p456, nrow=2, align = "v", rel_heights = c(1, 0.75))
-## ggsave("../doc/figure4.png", width = 6, height = 7, units = "in")
-
-## ## ####################################################### ##
-## ## ####################################################### ##
-## ##
-## ## Figure 6: Water balance under current and potential
-## ## (climate change)
-## ##
-## ## ####################################################### ##
-## ## ####################################################### ##
-
-## ## The same as above, except using future climate change
-## ## scenarios from Pradeep
-
-## ## TODO, as a very last step once JULES model is finalized
+## TODO, as a very last step once JULES model is finalized
 
 
 
@@ -1748,3 +1320,212 @@ ggsave("results/figure_test.png", width = 6, height = 6, units = "in")
 ##   ## scale_fill_gradient(low="white", high="blue") +
 ##   coord_sf()
 ## p
+
+## NOT USED:
+##
+## ####################################################### ##
+## ####################################################### ##
+##
+## Figure 1: Historical supply-side changes
+##
+## ####################################################### ##
+## ####################################################### ##
+
+## fig1_keywidth = 0.3
+## ## fig1_keywidth =
+## ##   grid::unit(fig1_keywidth / nbreaks, "npc")
+
+## ## Figure 1: Hydroclimatic trends
+## mean_precip = stackApply(precip_maps, indices = rep(1, nlayers(precip_maps)), mean)
+## p1 <- myplotfun1(mean_precip)
+## labelfun <- function(x) { ifelse((x %% 0.2) == 0, x, "") }
+## breaks <- seq(0, 1.8, by=0.05)
+## nbreaks <- length(breaks)
+## p1 <- p1 +
+##   scale_fill_stepsn(
+##     colours = RColorBrewer::brewer.pal(9, "Blues"),
+##     breaks = breaks,
+##     limits = c(min(breaks), max(breaks)),
+##     labels = labelfun,
+##     na.value = "grey"
+##   ) +
+##   theme(
+##     legend.position = "bottom"
+##   ) +
+##   guides(
+##     fill = guide_bins(
+##       title = expression(Depth~(m)),
+##       title.position = "top",
+##       axis = FALSE,
+##       keywidth = grid::unit(fig1_keywidth / nbreaks, "npc"),
+##       keyheight = grid::unit(3, "mm")
+##     )
+##   )
+## p1
+
+## mean_pet = stackApply(aridity_maps, indices = rep(1, nlayers(pet_maps)), mean)
+## p2 <- myplotfun1(mean_pet)
+## labelfun <- function(x) { ifelse((x %% 0.2) == 0, x, "") }
+## breaks <- seq(0, 1.6, by = 0.05)
+## nbreaks <- length(breaks)
+## p2 <- p2 +
+##   scale_fill_stepsn(
+##     colours = RColorBrewer::brewer.pal(9, "YlOrRd"), #Br"),
+##     breaks = breaks,
+##     limits = c(min(breaks), max(breaks)),
+##     labels = labelfun,
+##     na.value = "grey"
+##   ) +
+##   theme(
+##     legend.position = "bottom"
+##   ) +
+##   guides(
+##     fill = guide_bins(
+##       title = expression(Aridity~index~(`-`)),
+##       title.position = "top",
+##       axis = FALSE,
+##       keywidth = grid::unit(fig1_keywidth / nbreaks, "npc"),
+##       keyheight = grid::unit(3, "mm")
+##     )
+##   )
+## p2
+
+## ## Precipitation trend [not sure how to fit this in paper yet, but an important part of the story]
+## trend <- raster.kendall(precip_maps, p.value = TRUE)
+## slope <- trend$slope
+## pval <- trend$p.value
+## signif = pval <= 0.05
+## signif_pts = as(signif, "SpatialPointsDataFrame")
+## signif_pts = signif_pts[signif_pts$layer > 0,]
+## signif_pts = st_as_sf(signif_pts)
+## slope = slope * 1000 # meter/year -> mm/year
+## p3 <- myplotfun1(slope)
+## labelfun <- function(x) { ifelse((x %% 5) == 0, x, "") }
+## breaks <- seq(-20, 10, 0.5)
+## nbreaks <- length(breaks)
+## rdbu_pal = RColorBrewer::brewer.pal(9, "RdBu")
+## p3 <- p3 +
+##   geom_sf(data = signif_pts, size = 0.01, shape = 20) +
+##   scale_fill_stepsn(
+##     colours = rdbu_pal,
+##     breaks = breaks,
+##     values = scales::rescale(c(-20, 0, 10)),
+##     limits = c(min(breaks), max(breaks)),
+##     labels = labelfun,
+##     na.value = "grey"
+##   ) +
+##   theme(
+##     legend.position = "bottom"
+##   ) +
+##   guides(
+##     fill = guide_bins(
+##       title = expression(Precipitation~trend~(mm~y^-1)),
+##       title.position = "top",
+##       axis = FALSE,
+##       keywidth = grid::unit(fig1_keywidth / nbreaks, "npc"),
+##       keyheight = grid::unit(3, "mm")
+##     )
+##   )
+## p3
+
+## trend <- raster.kendall(aridity_maps, p.value = TRUE)
+## slope <- trend$slope
+## pval <- trend$p.value
+## signif = pval <= 0.05
+## signif_pts = as(signif, "SpatialPointsDataFrame")
+## signif_pts = signif_pts[signif_pts$layer > 0,]
+## signif_pts = st_as_sf(signif_pts)
+## ## slope = slope * 1000 # meter/year -> mm/year
+## p4 <- myplotfun1(slope)
+## labelfun <- function(x) { sapply(x, FUN=function(x) ifelse(isTRUE(all.equal(x %% 0.005, 0)), x, "")) }
+## breaks <- seq(-0.015, 0.01, 0.0005)
+## nbreaks <- length(breaks)
+## rdbu_pal = RColorBrewer::brewer.pal(9, "BrBG")
+## p4 <- p4 +
+##   geom_sf(data = signif_pts, size = 0.01, shape = 20) +
+##   scale_fill_stepsn(
+##     colours = rdbu_pal,
+##     breaks = breaks,
+##     values = scales::rescale(c(-0.015, 0, 0.01)),
+##     limits = c(min(breaks), max(breaks)),
+##     labels = labelfun,
+##     na.value = "grey"
+##   ) +
+##   theme(
+##     legend.position = "bottom"
+##   ) +
+##   guides(
+##     fill = guide_bins(
+##       title = expression(Aridity~index~trend~(y^-1)),
+##       title.position = "top",
+##       axis = FALSE,
+##       keywidth = grid::unit(fig1_keywidth / nbreaks, "npc"),
+##       keyheight = grid::unit(3, "mm")
+##   ))
+## p4
+
+## p1 <-
+##   p1 +
+##   theme(
+##     legend.margin = margin(0, 0, 0, 0),
+##     legend.box.margin = margin(-10, 0, -5, 0),
+##     ## plot.margin = grid::unit(c(0, 0, 0, 0), "mm"))
+##   )
+
+## p2 <-
+##   p2 +
+##   theme(
+##     legend.margin = margin(0, 0, 0, 0),
+##     legend.box.margin = margin(-10, 0, -5, 0),
+##     ## plot.margin = grid::unit(c(0, 0, 0, 0), "mm"),
+##     axis.text.y = element_blank()
+##   )
+## p3 <-
+##   p3 +
+##   theme(
+##     legend.margin = margin(0, 0, 0, 0),
+##     legend.box.margin = margin(-10, 0, -5, 0)
+##     )
+
+##     ## plot.margin = grid::unit(c(0, 0, 0, 0), "mm"))
+
+## p4 <-
+##   p4 +
+##   theme(
+##     legend.margin = margin(0, 0, 0, 0),
+##     legend.box.margin = margin(-10, 0, -5, 0),
+##     ## plot.margin = grid::unit(c(0, 0, 0, 0), "mm"),
+##     axis.text.y = element_blank()
+##   )
+
+## fig1 <- p1 + p2 + p3 + p4 + plot_layout(nrow = 2, ncol = 2)
+## ## fig1
+
+## fig1$patches$plots[[1]] =
+##   fig1$patches$plots[[1]] +
+##   labs(tag = "a") +
+##   theme(plot.tag.position = c(0.095, 1.035),
+##         plot.tag = element_text(size = tag_label_size, face="bold"))
+## fig1$patches$plots[[2]] =
+##   fig1$patches$plots[[2]] +
+##   labs(tag = "b") +
+##   theme(plot.tag.position = c(0.03, 1.035),
+##         plot.tag = element_text(size = tag_label_size, face="bold"))
+## fig1$patches$plots[[3]] =
+##   fig1$patches$plots[[3]] +
+##   labs(tag = "c") +
+##   theme(plot.tag.position = c(0.095, 1.035),
+##         plot.tag = element_text(size = tag_label_size, face="bold"))
+## fig1 =
+##   fig1 +
+##   labs(tag = "d") +
+##   theme(plot.tag.position = c(0.03, 1),
+##         plot.tag = element_text(vjust = -0.7, size = tag_label_size, face="bold"))
+## fig1
+
+## ggsave("../doc/figure1.png", width = 6, height = 5, units = "in")
+
+## TODO
+## * Fix misalignment of legends in p3/p4, which happens when title.position = "top"
+## * Make legend title smaller
+## * Inset plot to orient reader

@@ -165,3 +165,44 @@ saveRDS(
   object = historical_ts,
   file = file.path(outputdir, "historical_irrigation_demand_ts.rds")
 )
+
+## FIXME this only needs to be done for JULES_vn6.1_irrig
+## output_list = list()
+## pb = txtProgressBar(min = 0, max = length(years), initial = 0)
+## for (i in 1:(length(years)-1)) {
+##   year = years[i]
+##   ## TODO precipitation output
+##   recharge_fn = file.path(
+##     historical_analysis_dir,
+##     sprintf("recharge_historical_%d_irrig.tif", year)
+##   )
+##   recharge_map = raster(recharge_fn)
+##   abstraction_fn = file.path(
+##     historical_analysis_dir,
+##     sprintf("abstraction_historical_%d_irrig.tif", year)
+##   )
+##   abstraction_map = raster(abstraction_fn)
+##   dS_map = recharge_map - abstraction_map
+##   dS_map = resample(dS_map, india_cmd_area)
+##   ## output_map_list[[length(output_map_list) + 1]] = dS_map
+##   for (j in 1:length(basins)) {
+##     basin = basins[j]
+##     recharge_sum = compute_basin_total(recharge_fn, basin_regions[[basin]])
+##     abstraction_sum = compute_basin_total(abstraction_fn, basin_regions[[basin]])
+##     dS = recharge_sum - abstraction_sum
+##     output_list[[length(output_list) + 1]] = data.frame(
+##       year=year,
+##       basin = basin,
+##       volume=dS
+##     )
+##   }
+##   setTxtProgressBar(pb, i)
+## }
+## close(pb)
+
+## output = do.call("rbind", output_list) %>% as_tibble()
+## xx = output %>% arrange(year)
+## saveRDS(
+##   object = xx,
+##   file = file.path(outputdir, "historical_water_balance_ts.rds")
+## )
