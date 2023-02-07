@@ -11,7 +11,8 @@ CONFIG='config/gwm-cvhydro-config.yml'
 
 configfile: JULES_MOSART_CONFIG
 
-# Define the JULES simulations that will be analysed (STEM is a part of the filename)
+# Define the JULES simulations that will be analysed
+# (STEM is a part of the filename)
 STEMS = config['jules']['id_stem']
 HISTORICAL_STEMS = [stem for stem in STEMS if stem != 'JULES_vn6.1_irrig_current']
 
