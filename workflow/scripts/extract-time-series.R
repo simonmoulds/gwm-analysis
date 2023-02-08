@@ -31,8 +31,8 @@ if (sys.nframe() == 0L) {
 ## Load custom utilities
 source(file.path(cwd, "utils.R"))
 
-if (!dir.exists(outputdir))
-  dir.create(outputdir, recursive = TRUE)
+## if (!dir.exists(outputdir))
+##   dir.create(outputdir, recursive = TRUE)
 
 ## ####################################################### ##
 ## ####################################################### ##
@@ -109,12 +109,12 @@ for (m in 1:length(basins)) {
   pb <- txtProgressBar(min = 0, max = length(years), initial = 0)
   for (i in 1:length(years)) {
     year <- years[i]
-    ptn <- paste0("annual_precip_historical_", year, "_(.*).tif")
-    fn <- list.files(inputdir, ptn, full.names = TRUE)
-    ## fn <- file.path(
-    ##   inputdir,
-    ##   paste0("annual_precip_historical_", year, "_noirrig.tif")
-    ## )
+    ## ptn <- paste0("annual_precip_historical_", year, "_(.*).tif")
+    ## fn <- list.files(inputdir, ptn, full.names = TRUE)
+    fn <- file.path(
+      "results/JULES_vn6.1_irrig",
+      paste0("annual_precip_historical_", year, "_irrig.tif")
+    )
     precip_basin_sum <- compute_basin_total(fn, basin_regions[[basin]])
     et_basin_sum <- compute_basin_total(
       fn %>% gsub("precip", "et", .),
@@ -132,16 +132,16 @@ for (m in 1:length(basins)) {
       season <- seasons[j]
       for (k in 1:length(types)) {
         type <- types[k]
-        ptn <- paste0(season, "_", type, "_irrigation_historical_", year, "_(.*).tif")
-        fn <- list.files(inputdir, ptn, full.names = TRUE)
-        ## fn <- file.path(
-        ##   inputdir,
-        ##   paste0(
-        ##     season, "_", type,
-        ##     "_irrigation_historical_",
-        ##     year, "_irrig.tif"
-        ##   )
-        ## )
+        ## ptn <- paste0(season, "_", type, "_irrigation_historical_", year, "_(.*).tif")
+        ## fn <- list.files(inputdir, ptn, full.names = TRUE)
+        fn <- file.path(
+          "results/JULES_vn6.1_irrig",
+          paste0(
+            season, "_", type,
+            "_irrigation_historical_",
+            year, "_irrig.tif"
+          )
+        )
         irrigation_basin_sum <- compute_basin_total(fn, basin_regions[[basin]])
         output_list[[length(output_list) + 1]] <- data.frame(
           year = year,
@@ -163,46 +163,48 @@ for (m in 1:length(basins)) {
 historical_ts <- do.call("rbind", output_list) %>% as_tibble()
 saveRDS(
   object = historical_ts,
-  file = file.path(outputdir, "historical_irrigation_demand_ts.rds")
+  file = "results/historical_irrigation_demand_ts.rds"
 )
 
 ## FIXME this only needs to be done for JULES_vn6.1_irrig
-## output_list = list()
-## pb = txtProgressBar(min = 0, max = length(years), initial = 0)
-## for (i in 1:(length(years)-1)) {
-##   year = years[i]
-##   ## TODO precipitation output
-##   recharge_fn = file.path(
-##     historical_analysis_dir,
-##     sprintf("recharge_historical_%d_irrig.tif", year)
-##   )
-##   recharge_map = raster(recharge_fn)
-##   abstraction_fn = file.path(
-##     historical_analysis_dir,
-##     sprintf("abstraction_historical_%d_irrig.tif", year)
-##   )
-##   abstraction_map = raster(abstraction_fn)
-##   dS_map = recharge_map - abstraction_map
-##   dS_map = resample(dS_map, india_cmd_area)
-##   ## output_map_list[[length(output_map_list) + 1]] = dS_map
-##   for (j in 1:length(basins)) {
-##     basin = basins[j]
-##     recharge_sum = compute_basin_total(recharge_fn, basin_regions[[basin]])
-##     abstraction_sum = compute_basin_total(abstraction_fn, basin_regions[[basin]])
-##     dS = recharge_sum - abstraction_sum
-##     output_list[[length(output_list) + 1]] = data.frame(
-##       year=year,
-##       basin = basin,
-##       volume=dS
-##     )
-##   }
-##   setTxtProgressBar(pb, i)
-## }
-## close(pb)
+output_list = list()
+pb = txtProgressBar(min = 0, max = length(years), initial = 0)
+for (i in 1:(length(years)-1)) {
+  year = years[i]
+  ## TODO precipitation output
+  ## ptn <- paste0("recharge_historical_", year, "_(.*).tif")
+  ## fn <- list.files(inputdir, ptn, full.names = TRUE)
+  recharge_fn = file.path(
+    "results/JULES_vn6.1_irrig",
+    sprintf("recharge_historical_%d_irrig.tif", year)
+  )
+  recharge_map = raster(recharge_fn)
+  abstraction_fn = file.path(
+    "results/JULES_vn6.1_irrig",
+    sprintf("abstraction_historical_%d_irrig.tif", year)
+  )
+  abstraction_map = raster(abstraction_fn)
+  dS_map = recharge_map - abstraction_map
+  dS_map = resample(dS_map, india_cmd_area)
+  ## output_map_list[[length(output_map_list) + 1]] = dS_map
+  for (j in 1:length(basins)) {
+    basin = basins[j]
+    recharge_sum = compute_basin_total(recharge_fn, basin_regions[[basin]])
+    abstraction_sum = compute_basin_total(abstraction_fn, basin_regions[[basin]])
+    dS = recharge_sum - abstraction_sum
+    output_list[[length(output_list) + 1]] = data.frame(
+      year=year,
+      basin = basin,
+      volume=dS
+    )
+  }
+  setTxtProgressBar(pb, i)
+}
+close(pb)
 
-## output = do.call("rbind", output_list) %>% as_tibble()
-## xx = output %>% arrange(year)
-## saveRDS(
-##   object = xx,
-##   file = file.path(outputdir, "historical_water_balance_ts.rds")
-## )
+output = do.call("rbind", output_list) %>% as_tibble()
+xx = output %>% arrange(year)
+saveRDS(
+  object = xx,
+  file = "results/historical_water_balance_ts.rds"
+)

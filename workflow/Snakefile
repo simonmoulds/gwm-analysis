@@ -184,9 +184,10 @@ rule extract_historical_time_series:
     input:
         script='workflow/scripts/extract-time-series.R'
     output:
-        'results/{stem}/historical_irrigation_demand_ts.rds'
+        'results/historical_irrigation_demand_ts.rds',
+        'results/historical_water_balance_ts.rds'
     params:
-        outputdir='results/{stem}'
+        outputdir='results'
     resources:
         time = '03:00:00',
         mem_mb = 4000,
