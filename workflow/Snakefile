@@ -22,17 +22,19 @@ module jules_mosart:
 
 rule all:
     input:
-        expand('results/regrid_filenames_{stem}.txt', stem=STEMS),
-        expand('results/aggregate_month_filenames_{stem}.txt', stem=STEMS),
-        expand('results/resample_filenames_{stem}.txt', stem=STEMS),
-        expand('results/relative_irrigation_filenames_{stem}.txt', stem=STEMS),
-        expand('results/relative_monthly_irrigation_filenames_{stem}.txt', stem=STEMS),
-        'results/command_areas.tif',
-        'results/command_inlets_0.083333Deg.gpkg',
-        'results/command_inlets_0.100000Deg.gpkg',
-        'results/irrigation_policy_maps',
-        expand('results/compute_water_balance_{stem}.txt', stem=STEMS),
-        expand('results/{stem}/historical_irrigation_demand_ts.rds', stem=HISTORICAL_STEMS)
+        # expand('results/regrid_filenames_{stem}.txt', stem=STEMS),
+        # expand('results/aggregate_month_filenames_{stem}.txt', stem=STEMS),
+        # expand('results/resample_filenames_{stem}.txt', stem=STEMS),
+        # expand('results/relative_irrigation_filenames_{stem}.txt', stem=STEMS),
+        # expand('results/relative_monthly_irrigation_filenames_{stem}.txt', stem=STEMS),
+        # 'results/command_areas.tif',
+        # 'results/command_inlets_0.083333Deg.gpkg',
+        # 'results/command_inlets_0.100000Deg.gpkg',
+        # 'results/irrigation_policy_maps',
+        # expand('results/compute_water_balance_{stem}.txt', stem=STEMS),
+        # expand('results/{stem}/historical_irrigation_demand_ts.rds', stem=HISTORICAL_STEMS)
+        'results/historical_irrigation_demand_ts.rds',
+        'results/historical_water_balance_ts.rds'
 
 use rule regrid_jules_output from jules_mosart as jules_mosart_regrid_jules_output with:
     input:
