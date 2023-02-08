@@ -29,7 +29,7 @@ if (sys.nframe() == 0L) {
 }
 ## Load custom utilities
 source(file.path(cwd, "utils.R"))
-
+source(file.path(cwd, "plotting.R"))
 ## if (!dir.exists(outputdir))
 ##   dir.create(outputdir, recursive = TRUE)
 
