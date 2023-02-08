@@ -60,29 +60,29 @@ source(file.path(cwd, "utils.R"))
 ## ganges_basin = raster("resources/land.nc")
 ## ganges_basin[ganges_basin==0] = NA
 
-## ## Identify canal command area
-## cmd_area = st_read("resources/irrigation/command_areas.shp")
-## ## Pakistan and West Bengal are outside of the study region
-## pakistan_ids = c(1:5, 8:14, 16, 20, 37, 41)
-## west_bengal_ids = c(31, 34, 42, 43, 44)
-## india_cmd_area =
-##   cmd_area %>%
-##   filter(!ID %in% c(pakistan_ids, west_bengal_ids))
-## ## Convert to sp for plotting with raster
-## india_cmd_area_sp = india_cmd_area %>% as_Spatial()
-## india_cmd_area = rasterize(india_cmd_area_sp, ganges_basin, field = "ID")
-## india_cmd_area[india_cmd_area > 0] = 1
-## india_cmd_area_poly = rasterToPolygons(
-##   india_cmd_area, dissolve = TRUE
-## ) %>% st_as_sf()
+## Identify canal command area
+cmd_area = st_read("resources/irrigation/command_areas.shp")
+## Pakistan and West Bengal are outside of the study region
+pakistan_ids = c(1:5, 8:14, 16, 20, 37, 41)
+west_bengal_ids = c(31, 34, 42, 43, 44)
+india_cmd_area =
+  cmd_area %>%
+  filter(!ID %in% c(pakistan_ids, west_bengal_ids))
+## Convert to sp for plotting with raster
+india_cmd_area_sp = india_cmd_area %>% as_Spatial()
+india_cmd_area = rasterize(india_cmd_area_sp, ganges_basin, field = "ID")
+india_cmd_area[india_cmd_area > 0] = 1
+india_cmd_area_poly = rasterToPolygons(
+  india_cmd_area, dissolve = TRUE
+) %>% st_as_sf()
 
-## ## Create raster images of the east and west portion of the basin
-## ## TODO check this is consistent with the literature
-## ew_divide = colFromX(india_cmd_area, 79.125)
-## india_cmd_area_west = india_cmd_area
-## india_cmd_area_west[,ew_divide:160] = NA
-## india_cmd_area_east = india_cmd_area
-## india_cmd_area_east[,1:(ew_divide - 1)] = NA
+## Create raster images of the east and west portion of the basin
+## TODO check this is consistent with the literature
+ew_divide = colFromX(india_cmd_area, 79.125)
+india_cmd_area_west = india_cmd_area
+india_cmd_area_west[,ew_divide:160] = NA
+india_cmd_area_east = india_cmd_area
+india_cmd_area_east[,1:(ew_divide - 1)] = NA
 
 ## Create a list of basin regions which we can loop through
 basin_regions <- list(
