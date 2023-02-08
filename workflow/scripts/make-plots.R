@@ -57,8 +57,8 @@ source(file.path(cwd, "utils.R"))
 ## ####################################################### ##
 ## ####################################################### ##
 
-## ganges_basin = raster("resources/land.nc")
-## ganges_basin[ganges_basin==0] = NA
+ganges_basin = raster("resources/land.nc")
+ganges_basin[ganges_basin==0] = NA
 
 ## Identify canal command area
 cmd_area = st_read("resources/irrigation/command_areas.shp")
