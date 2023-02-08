@@ -312,6 +312,8 @@ gw_rabi_maps = stack(gw_rabi_maps)
 ## ####################################################### ##
 ## ####################################################### ##
 
+fig1_keywidth = 0.3
+
 current_canal_area = raster(
   file.path(
     "results/irrigated_area_maps",
