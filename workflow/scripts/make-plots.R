@@ -97,15 +97,15 @@ basin_regions <- list(
 ## current_canal_analysis_dir <- file.path(outputdir, "current_canal")
 ## restored_canal_analysis_dir <- file.path(outputdir, "restored_canal")
 
-## ## For spatial plots
-## world <- ne_countries(scale="small", continent="asia", returnclass="sf")
-## india <-
-##   st_read(file.path("resources", "GIS-shapefiles-1966base", "india70again.shp")) %>%
-##   as_Spatial()
+## For spatial plots
+world <- ne_countries(scale="small", continent="asia", returnclass="sf")
+india <-
+  st_read(file.path("resources", "GIS-shapefiles-1966base", "india70again.shp")) %>%
+  as_Spatial()
 
-## india$ID = 1
-## india = rasterize(india, ganges_basin, field = "ID")
-## india[india_cmd_area == 1] = 1
+india$ID = 1
+india = rasterize(india, ganges_basin, field = "ID")
+india[india_cmd_area == 1] = 1
 
 ## Variables for plotting
 axis_title_size = 6
