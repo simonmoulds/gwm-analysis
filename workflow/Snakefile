@@ -34,7 +34,8 @@ rule all:
         # expand('results/compute_water_balance_{stem}.txt', stem=STEMS),
         # expand('results/{stem}/historical_irrigation_demand_ts.rds', stem=HISTORICAL_STEMS)
         'results/historical_irrigation_demand_ts.rds',
-        'results/historical_water_balance_ts.rds'
+        'results/historical_water_balance_ts.rds',
+        'results/fig/figure2.png'
 
 use rule regrid_jules_output from jules_mosart as jules_mosart_regrid_jules_output with:
     input:
@@ -210,18 +211,18 @@ rule extract_historical_time_series:
 #     input:
 #         script='workflow/scripts/validate-jules-output.R'
 
-# rule make_plots:
-#     input:
-#         script='workflow/scripts/make-plots.R'
-#     output:
-#         directory('results/fig')
-#     params:
-#         None
-#     resources:
-#         time = '00:30:00',
-#         mem_mb = 4000,
-#         partition = 'short'
-#     shell:
-#         """
-#         Rscript {input.script} {output}
-#         """
+rule make_plots:
+    input:
+        script='workflow/scripts/make-plots.R'
+    output:
+        'results/fig/figure2.png'
+    params:
+        None
+    resources:
+        time = '00:30:00',
+        mem_mb = 4000,
+        partition = 'short'
+    shell:
+        """
+        Rscript {input.script}
+        """
