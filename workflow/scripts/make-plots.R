@@ -4,6 +4,7 @@
 ## library(ncdf4)
 ## library(ncdf4.helpers)
 library(raster)
+library(terra)
 ## library(rasterVis)
 library(RColorBrewer)
 library(sf)
@@ -383,7 +384,7 @@ p2 <- p2 +
     )
   )
 
-trend <- raster.kendall(sw_kharif_maps, p.value = TRUE)
+trend <- raster.kendall(terra::rast(sw_kharif_maps), p.value = TRUE)
 slope <- trend$slope
 pval <- trend$p.value
 signif = pval <= 0.05
