@@ -103,18 +103,21 @@ rule aggregate_relative_irrigation_output_month:
         'results/relative_monthly_irrigation_filenames_{stem}.txt'
     params:
         outputdir='results/{stem}'
-    resources:
-        time='00:30:00',
-        mem_mb=4000,
-        partition='short'
+    # resources:
+    #     time='00:30:00',
+    #     mem_mb=4000,
+    #     partition='short'
     conda:
         'envs/conda_environment_base.yml'
-    log:
-        'results/log/aggregate_relative_irrigation_output_month_{stem}.log'
+    # log:
+    #     'results/log/aggregate_relative_irrigation_output_month_{stem}.log'
     shell:
         """
         python {input.script} --inputfile {input.rel_irrig_filenames} --outputfile {output} --outputdir {params.outputdir} --config {input.config}
         """
+    # script:
+    #     'workflow/scripts/aggregate-jules-irrigation-month.py',
+
 
 rule prepare_command_areas:
     input:
@@ -126,15 +129,10 @@ rule prepare_command_areas:
         'results/command_inlets_0.100000Deg.gpkg'
     params:
         None
-    resources:
-        time='00:30:00',
-        mem_mb=4000,
-        partition='short'
     conda:
         'envs/conda_environment_base.yml'
     shell:
         """
-        # export R_LIBS_USER=/home/cenv0857/local/rlibs
         Rscript {input.script} {input.config}
         """
 
@@ -147,15 +145,10 @@ rule make_irrig_policy:
         directory('results/irrigation_policy_maps')
     params:
         None
-    resources:
-        time = '00:30:00',
-        mem_mb = 4000,
-        partition = 'short'
     conda:
         'envs/conda_environment_base.yml'
     shell:
         """
-        # export R_LIBS_USER=/home/cenv0857/local/rlibs
         Rscript {input.script} {input.land_frac} {input.india_frac} {output}
         """
 
@@ -168,15 +161,10 @@ rule compute_water_balance:
         'results/compute_water_balance_{stem}.txt'
     params:
         outputdir='results/{stem}'
-    resources:
-        time = '06:00:00',
-        mem_mb = 4000,
-        partition = 'short'
     conda:
         'envs/conda_environment_base.yml'
     shell:
         """
-        # export R_LIBS_USER=/home/cenv0857/local/rlibs
         Rscript {input.script} {wildcards.stem} {params.outputdir}
         """
 
@@ -189,15 +177,10 @@ rule extract_historical_time_series:
         'results/historical_water_balance_ts.rds'
     params:
         outputdir='results'
-    resources:
-        time = '03:00:00',
-        mem_mb = 4000,
-        partition = 'short'
     conda:
         'envs/conda_environment_base.yml'
     shell:
         """
-        # export R_LIBS_USER=/home/cenv0857/local/rlibs
         Rscript {input.script} {params.outputdir} {params.outputdir}
         """
 
@@ -220,10 +203,6 @@ rule make_plots:
         'results/fig/figure4.png'
     params:
         None
-    resources:
-        time = '00:30:00',
-        mem_mb = 4000,
-        partition = 'short'
     shell:
         """
         Rscript {input.script}
