@@ -1,296 +1,291 @@
 ## Author : Simon Moulds
 ## Date   : October 2021
 
-get_jules_month_data <- function(datadir, year, month, varname, id_stem, job_name, profile_name) {
+library(ncdf4)
+library(ncdf4.helpers)
+library(raster)
+library(magrittr)
+library(sf)
+# library(rnaturalearth)
+# library(rnaturalearthdata)
+library(rgdal)
+library(dplyr)
+
+
+## Global variables
+irrigation_sources <- c(
+  "canal", "other_sources", "other_wells", 
+  "tanks", "tubewells"
+)
+seasons <- c("continuous", "kharif", "rabi", "zaid")
+year_months <- 11:22 # Nov-Oct (year+1)
+reference_year <- 2010
+
+## Function definitions 
+
+get_jules_month_data <- function(datadir,
+                                 year,
+                                 month,
+                                 varname,
+                                 id_stem,
+                                 job_name,
+                                 profile_name) {
+
+    # This function loads monthly JULES output to a raster
     if (month > 12) {
-        month = month - 12
-        year_offset = 1
+        month <- month - 12
+        year_offset <- 1
     } else {
-        year_offset = 0
-    }    
-    fn = paste0(
+        year_offset <- 0
+    }
+    fn <- paste0(
         id_stem,
-        ".", sprintf(job_name, year + year_offset), 
+        ".", sprintf(job_name, year + year_offset),
         ".", profile_name,
         ".", year + year_offset,
         ".2D.month.nc"
     )
-    jules = nc_open(file.path(datadir, fn))
-    var = ncvar_get(jules, varname, start=c(1,1,month), count=c(80,40,1))
-    var = aperm(var, c(2,1))
-    var = var[rev(seq_len(nrow(var))),]
-    r = raster(nrows=40, ncols=80, xmn=60, xmx=100, ymn=20, ymx=40)
-    r[] = var
-    r    
+    jules <- nc_open(file.path(datadir, fn))
+    var <- ncvar_get(jules, varname, start=c(1, 1, month), count=c(80, 40, 1))
+    var <- aperm(var, c(2, 1))
+    var <- var[rev(seq_len(nrow(var))), ]
+    r <- raster(
+        nrows = 40, ncols = 80, 
+        xmn = 60, xmx = 100, ymn = 20, ymx = 40
+    )
+    r[] <- var
+    r
 }
 
-get_jules_month_irrig_rel_data <- function(datadir, year, month, varname, id_stem, job_name, profile_name) {
+get_jules_month_irrig_rel_data <- function(datadir,
+                                           year,
+                                           month,
+                                           varname,
+                                           id_stem,
+                                           job_name,
+                                           profile_name) {
+
     if (month > 12) {
-        month = month - 12
-        year_offset = 1
+        month <- month - 12
+        year_offset <- 1
     } else {
-        year_offset = 0
-    }    
-    fn = paste0(
+        year_offset <- 0
+    }
+    fn <- paste0(
         id_stem,
-        ".", sprintf(job_name, year + year_offset), 
-        ".", profile_name,
+        ".", sprintf(job_name, year + year_offset),
         ".rel_irrig_water",
         ".", year + year_offset,
         ".2D.month.nc"
     )
-    if (file.exists(file.path(datadir, fn))) {
-        jules = nc_open(file.path(datadir, fn))
-        var = ncvar_get(jules, varname, start=c(1,1,1,month), count=c(80,40,15,1))
-        var = aperm(var, c(3,2,1))
-        var = var[,rev(seq_len(dim(var)[2])),]
+    if (file.exists(file.path("results", id_stem, fn))) {
+        jules <- nc_open(file.path("results", id_stem, fn))
+        var <- ncvar_get(
+            jules,
+            varname,
+            start = c(1, 1, 1, month),
+            count = c(80, 40, 15, 1)
+        )
+        var <- aperm(var, c(3, 2, 1))
+        var <- var[, rev(seq_len(dim(var)[2])), ]
     } else {
-        var = array(data=0, dim=c(15, 40, 80))
+        var <- array(data = 0, dim = c(15, 40, 80))
     }
-    template = raster(nrows=40, ncols=80, xmn=60, xmx=100, ymn=20, ymx=40)
-    rlist = list()
+    template <- raster(
+        nrows = 40, ncols = 80, 
+        xmn = 60, xmx = 100, ymn = 20, ymx = 40
+    )
+    rlist <- list()
     for (i in 1:15) {
-        r = template
-        r[] = var[i,,]
-        rlist[[i]] = r
+        r <- template
+        r[] <- var[i, , ]
+        rlist[[i]] <- r
     }
-    st = stack(rlist)
+    st <- stack(rlist)
     st
 }
 
-## get_jules_jjas_data <- function(datadir, year, varname) {
-##     maps = list()
-##     for (i in 1:4) {
-##         ## +5 so we start at June
-##         maps[[i]] = get_jules_month_data(datadir, year, i+5, varname)
-##     }
-##     sm = stackApply(stack(maps), indices=rep(1, 4), fun=sum)
-##     sm
-## }
+get_irr_frac <- function(year,
+                         season,
+                         policy = "current_canal") {
 
-## get_jules_year_data <- function(datadir, year, month, varname) {
-##     maps = list()
-##     for (i in 1:12) {
-##         maps[[i]] = get_jules_month_data(datadir, year, i, varname)
-##     }
-##     sm = stackApply(stack(maps), indices=rep(1, 12), fun=sum)
-##     sm
-## }
-
-get_irr_frac <- function(year, season, policy="current_canal") {
-  ## if (policy %in% policies) {
   if (policy == "historical") {
-    suffix = ".tif"
+    suffix <- ".tif"
     mapdir <- "resources/irrigated_area_maps"
   } else {
-    suffix = paste0("_", policy, ".tif")
+    suffix <- paste0("_", policy, ".tif")
     mapdir <- "results/irrigated_area_maps"
   }
-  ## } else {
-  ##   msg = paste0("Policy ", policy, " not recognised!")
-  ##   stop(msg)
-  ## }
   maps = list()
   for (i in 1:length(irrigation_sources)) {
-    source = irrigation_sources[i]
-    fn = file.path(
+    source <- irrigation_sources[i]
+    fn <- file.path(
       mapdir,
       paste0(
         "icrisat_", season, "_", source, "_",
         year, "_india_0.500000Deg", suffix
       )
     )
-    maps[[source]] = raster(fn)
+    maps[[source]] <- raster(fn)
   }
-  maps = stack(maps)
+  maps <- stack(maps)
   maps
 }
 
-## get_irr_frac2 = function(year, season, policy) {
-##     frac_fn = file.path(
-##         "../data/wfdei/ancils/",
-##         paste0("jules_5pft_w_crops_veg_frac_", year, "_igp_wfdei.nc")
-##     )
-##     template = raster(xmn=60, xmx=100, ymn=20, ymx=40, nrow=40, ncol=80)
-##     ds = nc_open(frac_fn)
-##     frac = ncvar_get(ds, "land_cover_lccs")
-##     if (season == "kharif") {
-##         ## irrigated_single + irrigated_double + irrigated_triple
-##         ## i.e. assume that if land is irrigated at all, it is
-##         ## always irrigated during kharif
-##         tot_frac = apply(frac[,,7:9], 1:2, sum)
-##     } else if (season == "rabi") {
-##         ## irrigated_double + irrigated_triple
-##         ## i.e. assume that if land is irrigated twice, it is
-##         ## always irrigated during rabi
-##         tot_frac = apply(frac[,,8:9], 1:2, sum)
-##     } else if (season == "zaid") {
-##         ## irrigated_triple
-##         ## i.e. assume that if land is irrigated three times, it is
-##         ## always irrigated during zaid
-##         tot_frac = frac[,,9]
-##     } else if (season == "continuous") {
-##         tot_frac = frac[,,10]
-##     }
-##     template[] = apply(t(tot_frac), 2, rev)
-##     template[template >= 1e+30] = NA # FIXME
-##     template
-## }
-
 get_sw_gw_irr_frac <- function(year, season, policy) {
-    maps = get_irr_frac(year, season, policy)
-    sw_maps = maps[[c("canal","other_sources","tanks")]]
-    gw_maps = maps[[c("other_wells","tubewells")]]
-    sw_total = stackApply(sw_maps, indices=rep(1, 3), fun=sum)
-    gw_total = stackApply(gw_maps, indices=rep(1, 2), fun=sum)
-    total = stackApply(maps, indices=rep(1, 5), fun=sum)
-    sw_total = sw_total / total
+    maps <- get_irr_frac(year, season, policy)
+    sw_maps <- maps[[c("canal","other_sources","tanks")]]
+    gw_maps <- maps[[c("other_wells","tubewells")]]
+    sw_total <- stackApply(sw_maps, indices=rep(1, 3), fun=sum)
+    gw_total <- stackApply(gw_maps, indices=rep(1, 2), fun=sum)
+    total <- stackApply(maps, indices=rep(1, 5), fun=sum)
+    sw_total <- sw_total / total
     sw_total[!is.finite(sw_total)] = 0
-    gw_total = gw_total / total
+    gw_total <- gw_total / total
     gw_total[!is.finite(gw_total)] = 0    
-    list(sw=sw_total, gw=gw_total, total=total)
+    list(sw = sw_total, gw = gw_total, total = total)
 }
 
-seasons = c("continuous", "kharif", "rabi", "zaid")
 get_nia_gia <- function(year, policy) {
-    maps = vector("list", 4) %>% setNames(seasons)
+    maps <- vector("list", 4) %>% setNames(seasons)
     for (i in 1:length(seasons)) {
-        season = seasons[i]
-        maps[[season]] = get_sw_gw_irr_frac(year, season, policy)
+        season <- seasons[i]
+        maps[[season]] <- get_sw_gw_irr_frac(year, season, policy)
     }
-    types = c("gw", "sw", "total")
-    nia = vector("list", 3) %>% setNames(types)
-    gia = vector("list", 3) %>% setNames(types)
+    types <- c("gw", "sw", "total")
+    nia <- vector("list", 3) %>% setNames(types)
+    gia <- vector("list", 3) %>% setNames(types)
     for (i in 1:length(types)) {
-        type = types[i]
-        st = stack(lapply(maps, FUN=function(x) x[[type]]))
-        nia[[type]] = stackApply(st, indices=rep(1, 4), fun=max)
-        gia[[type]] = stackApply(st, indices=rep(1, 4), fun=sum)
+        type <- types[i]
+        st <- stack(lapply(maps, FUN=function(x) x[[type]]))
+        nia[[type]] <- stackApply(st, indices=rep(1, 4), fun=max)
+        gia[[type]] <- stackApply(st, indices=rep(1, 4), fun=sum)
     }
-    list(gia=gia, nia=nia)
+    list(gia = gia, nia = nia)
 }
 
-## TODO put these functions in utils.R
-load_jules_output <- function(datadir, id_stem, policy, yr, ...) {
+load_jules_output <- function(datadir,
+                              id_stem,
+                              policy,
+                              yr, ...) {
 
   ## FIXME - make these arguments to function
-  job_name = "jules_%s"
-  profile_name = "daily_hydrology"
+  job_name <- "jules_%s"
+  profile_name <- "daily_hydrology"
 
   irri_yr <- ifelse(policy == "historical", yr, reference_year)
   ## `get_sw_gw_irr_frac()` returns a list with elements:
   ## gw    : Fraction of grid cell irrigated with groundwater
   ## sw    : Fraction of grid cell irrigated with surface water
   ## total : Total irrigation
-  ## TODO: ***ensure these are obtained directly from JULES input maps***
-  kharif_irr = get_sw_gw_irr_frac(irri_yr, "kharif", policy)
-  rabi_irr = get_sw_gw_irr_frac(irri_yr, "rabi", policy)
-  zaid_irr = get_sw_gw_irr_frac(irri_yr, "zaid", policy)
-  continuous_irr = get_sw_gw_irr_frac(irri_yr, "continuous", policy)
-
-  ## id_stem = id_stems[i]
-  ## suffix = sub("(JULES)_(vn.*)_([a-z]+)", "\\3", id_stem)
+  kharif_irr <- get_sw_gw_irr_frac(irri_yr, "kharif", policy)
+  rabi_irr <- get_sw_gw_irr_frac(irri_yr, "rabi", policy)
+  zaid_irr <- get_sw_gw_irr_frac(irri_yr, "zaid", policy)
+  continuous_irr <- get_sw_gw_irr_frac(irri_yr, "continuous", policy)
 
   ## Preallocate lists to store values
-  precip = vector("list", 12)
-  ## irrig_water = vector("list", 12)
-  surf_roff = vector("list", 12)
-  sub_surf_roff = vector("list", 12)
-  et = vector("list", 12)
-  gw_irrig_water = vector("list", 12)
-  sw_irrig_water = vector("list", 12)
-  total_irrig_water = vector("list", 12)
+  precip <- vector("list", 12)
+  surf_roff <- vector("list", 12)
+  sub_surf_roff <- vector("list", 12)
+  et <- vector("list", 12)
+  pet <- vector("list", 12)
+  gw_irrig_water <- vector("list", 12)
+  sw_irrig_water <- vector("list", 12)
+  total_irrig_water <- vector("list", 12)
 
   ## Season irrigation - each season divided between gw/sw/total
-  season_irrig_maps = vector("list", 4) %>% setNames(seasons)
+  season_irrig_maps <- vector("list", 4) %>% setNames(seasons)
   for (j in 1:length(seasons)) {
-    season = seasons[j]
-    season_irrig_maps[[season]] =
-      lapply(1:3, FUN=function(x) vector("list", 12)) %>%
+    season <- seasons[j]
+    season_irrig_maps[[season]] <-
+      lapply(1:3, FUN = function(x) vector("list", 12)) %>%
       setNames(c("total", "sw", "gw"))
   }
 
   ## Loop through months and calculate each variable
   for (j in 1:12) {
-    month = year_months[j]
-    ## Precipitation
-    precip[[j]] = get_jules_month_data(
+    month <- year_months[j]
+    precip[[j]] <- get_jules_month_data(
       datadir, yr, month, "precip", id_stem, job_name, profile_name
     )
-    ## Runoff
-    sub_surf_roff[[j]] = get_jules_month_data(
+    sub_surf_roff[[j]] <- get_jules_month_data(
         datadir, yr, month, "sub_surf_roff", id_stem, job_name, profile_name
     )
-    surf_roff[[j]] = get_jules_month_data(
+    surf_roff[[j]] <- get_jules_month_data(
         datadir, yr, month, "surf_roff", id_stem, job_name, profile_name
     )
-    ## Evaporation
-    esoil = get_jules_month_data(
+    esoil <- get_jules_month_data(
         datadir, yr, month, "esoil_gb", id_stem, job_name, profile_name
     )
-    ecan = get_jules_month_data(
+    ecan <- get_jules_month_data(
         datadir, yr, month, "ecan_gb", id_stem, job_name, profile_name
     )
-    elake = get_jules_month_data(
+    elake <- get_jules_month_data(
         datadir, yr, month, "elake", id_stem, job_name, profile_name
     )
-    et[[j]] = esoil + ecan + elake
-    ## Irrigation
-    irrig_water = get_jules_month_irrig_rel_data(
+    et[[j]] <- esoil + ecan + elake
+    pet[[j]] <- get_jules_month_data(
+        datadir, yr, month, "fao_et0", id_stem, job_name, profile_name
+    )
+    irrig_water <- get_jules_month_irrig_rel_data(
         datadir, yr, month, "irrig_water", id_stem, job_name, profile_name
     )
-    irrig_water_reference = get_jules_month_data(
-        datadir, yr, month, "irrig_water", id_stem, job_name, profile_name
-    )
-    irrig_water_total = stackApply(
+    # irrig_water_reference <- get_jules_month_data(
+    #     datadir, yr, month, "irrig_water", id_stem, job_name, profile_name
+    # )
+    irrig_water_total <- stackApply(
         irrig_water,
-        indices=rep(1, nlayers(irrig_water)),
-        fun=sum
+        indices = rep(1, nlayers(irrig_water)),
+        fun = sum
     )
     ## 7/8/9/10 are the indices of the respective land fraction in JULES
-    kharif_index = (irrig_water[[7]] > 0)
-    rabi_index = (irrig_water[[8]] > 0) & (!kharif_index)
-    zaid_index = (irrig_water[[9]] > 0) & (!(kharif_index | rabi_index))
-    continuous_index = (irrig_water[[10]] > 0)
+    kharif_index <- (irrig_water[[7]] > 0)
+    rabi_index <- (irrig_water[[8]] > 0) & (!kharif_index)
+    zaid_index <- (irrig_water[[9]] > 0) & (!(kharif_index | rabi_index))
+    continuous_index <- (irrig_water[[10]] > 0)
     ## Compute kharif irrigation among each irrigated land cover
-    kharif_irrig_water = stackApply(
+    kharif_irrig_water <- stackApply(
         irrig_water[[7:9]],
-        indices=rep(1, 3),
-        fun=sum
+        indices = rep(1, 3),
+        fun = sum
     ) * kharif_index
-    season_irrig_maps[["kharif"]][["gw"]][[j]] =
-        kharif_irrig_water * kharif_irr$gw
-    season_irrig_maps[["kharif"]][["sw"]][[j]] =
-        kharif_irrig_water * kharif_irr$sw
-    season_irrig_maps[["kharif"]][["total"]][[j]] =
-        kharif_irrig_water
-    rabi_irrig_water = stackApply(
+    season_irrig_maps[["kharif"]][["gw"]][[j]] <- (
+        kharif_irrig_water * kharif_irr[["gw"]]
+    )
+    season_irrig_maps[["kharif"]][["sw"]][[j]] <- (
+        kharif_irrig_water * kharif_irr[["sw"]]
+    )
+    season_irrig_maps[["kharif"]][["total"]][[j]] <- kharif_irrig_water
+    rabi_irrig_water <- stackApply(
         irrig_water[[8:9]],
         indices=rep(1, 2),
         fun=sum
     ) * rabi_index
-    season_irrig_maps[["rabi"]][["gw"]][[j]] =
-        rabi_irrig_water * rabi_irr$gw
-    season_irrig_maps[["rabi"]][["sw"]][[j]] =
-        rabi_irrig_water * rabi_irr$sw
-    season_irrig_maps[["rabi"]][["total"]][[j]] =
-        rabi_irrig_water
-    zaid_irrig_water = irrig_water[[9]] * zaid_index
-    season_irrig_maps[["zaid"]][["gw"]][[j]] =
-        zaid_irrig_water * zaid_irr$gw
-    season_irrig_maps[["zaid"]][["sw"]][[j]] =
-        zaid_irrig_water * zaid_irr$sw
-    season_irrig_maps[["zaid"]][["total"]][[j]] =
-        zaid_irrig_water
-    continuous_irrig_water = irrig_water[[10]] * continuous_index
-    season_irrig_maps[["continuous"]][["gw"]][[j]] =
+    season_irrig_maps[["rabi"]][["gw"]][[j]] <- (
+        rabi_irrig_water * rabi_irr[["gw"]]
+    )
+    season_irrig_maps[["rabi"]][["sw"]][[j]] <- (
+        rabi_irrig_water * rabi_irr[["sw"]]
+    )
+    season_irrig_maps[["rabi"]][["total"]][[j]] <- rabi_irrig_water
+    zaid_irrig_water <- irrig_water[[9]] * zaid_index
+    season_irrig_maps[["zaid"]][["gw"]][[j]] <- (
+        zaid_irrig_water * zaid_irr[["gw"]]
+    )
+    season_irrig_maps[["zaid"]][["sw"]][[j]] <- (
+        zaid_irrig_water * zaid_irr[["sw"]]
+    )
+    season_irrig_maps[["zaid"]][["total"]][[j]] <- zaid_irrig_water
+    continuous_irrig_water <- irrig_water[[10]] * continuous_index
+    season_irrig_maps[["continuous"]][["gw"]][[j]] <- (
         continuous_irrig_water * continuous_irr$gw
-    season_irrig_maps[["continuous"]][["sw"]][[j]] =
+    )
+    season_irrig_maps[["continuous"]][["sw"]][[j]] <- (
         continuous_irrig_water * continuous_irr$sw
-    season_irrig_maps[["continuous"]][["total"]][[j]] =
-        continuous_irrig_water
+    )
+    season_irrig_maps[["continuous"]][["total"]][[j]] <- continuous_irrig_water
     ## Source totals
-    gw_irrig_water[[j]] =
+    gw_irrig_water[[j]] <-
         season_irrig_maps[["kharif"]][["gw"]][[j]] +
         season_irrig_maps[["rabi"]][["gw"]][[j]] +
         season_irrig_maps[["zaid"]][["gw"]][[j]] +
@@ -342,6 +337,7 @@ load_jules_output <- function(datadir, id_stem, policy, yr, ...) {
     surf_roff = surf_roff,
     sub_surf_roff = sub_surf_roff,
     et = et,
+    pet = pet,
     gw_irrig_water = gw_irrig_water,
     sw_irrig_water = sw_irrig_water,
     total_irrig_water = total_irrig_water,
@@ -762,88 +758,81 @@ compute_current_canal_policy <- function(datadir, ...) {
   )
 }
 
-summarise_water_balance <- function(stem, policy, years, outputdir) {
+summarise_water_balance <- function(stem,
+                                    policy,
+                                    years,
+                                    outputdir) {
 
   pb = txtProgressBar(min = 0, max = length(years) - 1, initial = 0)
   for (k in 1:(length(years) - 1)) {
-    yr = years[k]
+    yr <- years[k]
 
     ## Load JULES output
     jules_output <- load_jules_output("results/JULES_output", stem, policy, yr)
-    precip <- jules_output$precip
-    surf_roff <- jules_output$surf_roff
-    sub_surf_roff <- jules_output$sub_surf_roff
-    et <- jules_output$et
-    gw_irrig_water <- jules_output$gw_irrig_water
-    sw_irrig_water <- jules_output$sw_irrig_water
-    total_irrig_water <- jules_output$total_irrig_water
-    season_irrig_maps <- jules_output$season_irrig_maps
+    precip <- jules_output[["precip"]]
+    surf_roff <- jules_output[["surf_roff"]]
+    sub_surf_roff <- jules_output[["sub_surf_roff"]]
+    et <- jules_output[["et"]]
+    pet <- jules_output[["pet"]]
+    gw_irrig_water <- jules_output[["gw_irrig_water"]]
+    sw_irrig_water <- jules_output[["sw_irrig_water"]]
+    total_irrig_water <- jules_output[["total_irrig_water"]]
+    season_irrig_maps <- jules_output[["season_irrig_maps"]]
 
-    ## ############################# ##
-    ## Annual total irrigation       ##
-    ## ############################# ##
-    suffix = sub("(JULES)_(vn.*)_([a-z]+)", "\\3", stem) #id_stems[i])
-    annual_total_irrigation = stackApply(
+    ## Annual total irrigation
+    suffix <- sub("(JULES)_(vn.*)_([a-z]+)", "\\3", stem) #id_stems[i])
+    annual_total_irrigation <- stackApply(
       stack(total_irrig_water),
-      indices=rep(1, 12),
-      fun=sum
+      indices = rep(1, 12),
+      fun = sum
     )
     fn <- paste0(
       "annual_total_irrigation_", policy, "_", yr, "_", suffix, ".tif"
     )
     writeRaster(
       annual_total_irrigation,
-      ## file.path(outputdir, policy, fn),
       file.path(outputdir, fn),
       overwrite = TRUE
     )
 
-    ## ############################# ##
-    ## Annual gw irrigation
-    ## ############################# ##
-    annual_gw_irrigation = stackApply(
+    ## Annual groundwater irrigation
+    annual_gw_irrigation <- stackApply(
       stack(gw_irrig_water),
-      indices=rep(1, 12),
-      fun=sum
+      indices = rep(1, 12),
+      fun = sum
     )
     fn <- paste0(
       "annual_gw_irrigation_", policy, "_", yr, "_", suffix, ".tif"
     )
     writeRaster(
       annual_gw_irrigation,
-      ## file.path(outputdir, policy, fn),
       file.path(outputdir, fn),
       overwrite = TRUE
     )
 
-    ## ############################# ##
     ## Annual sw irrigation
-    ## ############################# ##
-    annual_sw_irrigation = stackApply(
+    annual_sw_irrigation <- stackApply(
       stack(sw_irrig_water),
-      indices=rep(1, 12),
-      fun=sum
+      indices = rep(1, 12),
+      fun = sum
     )
     fn <- paste0(
       "annual_sw_irrigation_", policy, "_", yr, "_", suffix, ".tif"
     )
     writeRaster(
       annual_sw_irrigation,
-      ## file.path(outputdir, policy, fn),
       file.path(outputdir, fn),
       overwrite = TRUE
     )
 
-    ## ############################# ##
     ## Monthly and season-wise totals
-    ## ############################# ##
     for (j in 1:length(seasons)) {
-      season = seasons[j]
+      season <- seasons[j]
       for (type in c("total", "gw", "sw")) {
-        season_irrigation = stackApply(
+        season_irrigation <- stackApply(
           stack(season_irrig_maps[[season]][[type]]),
-          indices=rep(1, 12),
-          fun=sum
+          indices = rep(1, 12),
+          fun = sum
         )
         fn <- paste0(
           season, "_", type, "_irrigation_",
@@ -851,23 +840,22 @@ summarise_water_balance <- function(stem, policy, years, outputdir) {
         )
         writeRaster(
           season_irrigation,
-          ## file.path(outputdir, policy, fn),
           file.path(outputdir, fn),
-          overwrite=TRUE
+          overwrite = TRUE
         )
       }
     }
     for (j in 1:12) {
-      month = year_months[j]
+      month <- year_months[j]
       for (type in c("total", "gw", "sw")) {
-        maps = stack(
-          lapply(seasons, FUN=function(season)
+        maps <- stack(
+          lapply(seasons, FUN = function(season)
             season_irrig_maps[[season]][[type]][[j]])
         )
-        month_irrigation = stackApply(
+        month_irrigation <- stackApply(
           maps,
-          indices=rep(1, length(seasons)),
-          fun=sum
+          indices = rep(1, length(seasons)),
+          fun = sum
         )
         fn <- paste0(
           type, "_irrigation_", policy, "_", yr, "_",
@@ -875,96 +863,107 @@ summarise_water_balance <- function(stem, policy, years, outputdir) {
         )
         writeRaster(
           month_irrigation,
-          ## file.path(outputdir, policy, fn),
           file.path(outputdir, fn),
           overwrite = TRUE
         )
       }
     }
 
-    ## ############################# ##
     ## Annual ET
-    ## ############################# ##
-    annual_et = stackApply(stack(et), indices=rep(1, 12), fun=sum)
+    annual_et <- stackApply(
+        stack(et), 
+        indices = rep(1, 12), 
+        fun = sum
+    )
     fn <- paste0("annual_et_", policy, "_", yr, "_", suffix, ".tif")
     writeRaster(
       annual_et,
-      ## file.path(outputdir, policy, fn),
       file.path(outputdir, fn),
       overwrite = TRUE
     )
 
-    ## ############################# ##
-    ## Annual precip
-    ## ############################# ##
-    annual_precip = stackApply(stack(precip), indices=rep(1, 12), fun=sum)
-    fn <- paste0("annual_precip_", policy, "_", yr, "_", suffix, ".tif")
+    ## Annual PET
+    annual_pet <- stackApply(
+        stack(pet), 
+        indices = rep(1, 12), 
+        fun = sum
+    )
+    fn <- paste0("annual_pet_", policy, "_", yr, "_", suffix, ".tif")
+    writeRaster(
+      annual_pet,
+      file.path(outputdir, fn),
+      overwrite = TRUE
+    )
+
+    ## Annual precipitation
+    annual_precip = stackApply(
+        stack(precip), 
+        indices = rep(1, 12), 
+        fun = sum
+    )
+    fn <- paste-1("annual_precip_", policy, "_", yr, "_", suffix, ".tif")
     writeRaster(
       annual_precip,
-      ## file.path(outputdir, policy, fn),
       file.path(outputdir, fn),
       overwrite = TRUE
     )
 
-    ## ############################# ##
     ## Annual surface runoff
-    ## ############################# ##
-    annual_surf_roff = stackApply(stack(surf_roff), indices=rep(1, 12), fun=sum)
+    annual_surf_roff <- stackApply(
+        stack(surf_roff), 
+        indices = rep(1, 12), 
+        fun = sum
+    )
     fn <- paste0("annual_surf_roff_", policy, "_", yr, "_", suffix, ".tif")
     writeRaster(
       annual_surf_roff,
-      ## file.path(outputdir, policy, fn),
       file.path(outputdir, fn),
       overwrite = TRUE
     )
 
-    ## ############################# ##
     ## Annual subsurface runoff
-    ## ############################# ##
-    annual_sub_surf_roff = stackApply(stack(sub_surf_roff), indices=rep(1, 12), fun=sum)
+    annual_sub_surf_roff <- stackApply(
+        stack(sub_surf_roff), 
+        indices = rep(1, 12), 
+        fun = sum
+    )
     fn <- paste0("annual_sub_surf_roff_", policy, "_", yr, "_", suffix, ".tif")
     writeRaster(
       annual_sub_surf_roff,
-      ## file.path(outputdir, policy, fn),
       file.path(outputdir, fn),
       overwrite = TRUE
     )
 
-    ## ############################# ##
     ## Recharge
-    ## ############################# ##
-    Qin = stackApply(stack(sub_surf_roff), indices=rep(1, 12), fun=sum)
+    Qin <- stackApply(
+        stack(sub_surf_roff),
+        indices = rep(1, 12),
+        fun = sum
+    )
     fn <- paste0("recharge_", policy, "_", yr, "_", suffix, ".tif")
     writeRaster(
       Qin,
-      ## file.path(outputdir, policy, fn),
       file.path(outputdir, fn),
       overwrite = TRUE
     )
 
-    ## ############################# ##
     ## Abstraction
-    ## ############################# ##
-    Qout = stackApply(stack(gw_irrig_water), indices=rep(1, 12), fun=sum)
+    Qout <- stackApply(
+        stack(gw_irrig_water), 
+        indices = rep(1, 12), 
+        fun = sum
+    )
     fn <- paste0("abstraction_", policy, "_", yr, "_", suffix, ".tif")
     writeRaster(
       Qout,
-      ## file.path(outputdir, policy, fn),
       file.path(outputdir, fn),
       overwrite = TRUE
     )
 
-    ## ############################# ##
     ## Change in storage
-    ## ############################# ##
-    dS = Qin - Qout
+    dS <- Qin - Qout
     fn <- paste0("dS", policy, "_", yr, "_", suffix, ".tif")
-    writeRaster(
-      dS,
-      ## file.path(outputdir, policy, fn),
-      file.path(outputdir, fn),
-      overwrite = TRUE
-    )
+    writeRaster(dS, file.path(outputdir, fn), overwrite = TRUE)
     setTxtProgressBar(pb, k)
   }
   close(pb)

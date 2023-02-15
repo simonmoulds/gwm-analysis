@@ -25,17 +25,18 @@ rule all:
         # expand('results/regrid_filenames_{stem}.txt', stem=STEMS),
         # expand('results/aggregate_month_filenames_{stem}.txt', stem=STEMS),
         # expand('results/resample_filenames_{stem}.txt', stem=STEMS),
-        # expand('results/relative_irrigation_filenames_{stem}.txt', stem=STEMS),
-        # expand('results/relative_monthly_irrigation_filenames_{stem}.txt', stem=STEMS),
+        expand('results/relative_irrigation_filenames_{stem}.txt', stem=STEMS),
+        expand('results/relative_monthly_irrigation_filenames_{stem}.txt', stem=STEMS),
         # 'results/command_areas.tif',
         # 'results/command_inlets_0.083333Deg.gpkg',
         # 'results/command_inlets_0.100000Deg.gpkg',
         # 'results/irrigation_policy_maps',
-        # expand('results/compute_water_balance_{stem}.txt', stem=STEMS),
-        # expand('results/{stem}/historical_irrigation_demand_ts.rds', stem=HISTORICAL_STEMS)
+        expand('results/compute_water_balance_{stem}.txt', stem=STEMS),
         'results/historical_irrigation_demand_ts.rds',
         'results/historical_water_balance_ts.rds',
-        'results/fig/figure2.png'
+        'results/fig/figure2.png',
+        'results/fig/figure3.png',
+        'results/fig/figure4.png'
 
 use rule regrid_jules_output from jules_mosart as jules_mosart_regrid_jules_output with:
     input:
@@ -84,10 +85,6 @@ rule process_jules_output:
         'results/relative_irrigation_filenames_{stem}.txt'
     params:
         outputdir='results/{stem}'
-    resources:
-        time='00:30:00',
-        mem_mb=4000,
-        partition='short'
     conda:
         'envs/conda_environment_base.yml'
     log:
@@ -185,6 +182,7 @@ rule compute_water_balance:
 
 rule extract_historical_time_series:
     input:
+        expand('results/compute_water_balance_{stem}.txt', stem=STEMS),
         script='workflow/scripts/extract-time-series.R'
     output:
         'results/historical_irrigation_demand_ts.rds',
@@ -213,9 +211,13 @@ rule extract_historical_time_series:
 
 rule make_plots:
     input:
+        'results/historical_irrigation_demand_ts.rds',
+        'results/historical_water_balance_ts.rds',
         script='workflow/scripts/make-plots.R'
     output:
-        'results/fig/figure2.png'
+        'results/fig/figure2.png',
+        'results/fig/figure3.png',
+        'results/fig/figure4.png'
     params:
         None
     resources:

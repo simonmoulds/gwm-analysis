@@ -9,6 +9,16 @@ library(rnaturalearth)
 library(rnaturalearthdata)
 library(patchwork)
 
+# world <- ne_countries(scale="small", continent="asia", returnclass="sf")
+# india <-
+#   st_read(file.path("resources", "GIS-shapefiles-1966base", "india70again.shp")) %>%
+#   as_Spatial()
+#
+# india$ID = 1
+# india = rasterize(india, ganges_basin, field = "ID")
+# india[india_cmd_area == 0] = 1
+
+
 gplot_data <- function(x, maxpixels = 50000)  {
   ## https://stackoverflow.com/a/47190738
   x <- raster::sampleRegular(x, maxpixels, asRaster = TRUE)

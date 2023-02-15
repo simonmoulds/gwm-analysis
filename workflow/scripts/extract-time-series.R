@@ -1,7 +1,7 @@
 ## Author : Simon Moulds
 ## Date   : April 2021
 
-## library(ncdf4)
+# library(ncdf4)
 ## library(ncdf4.helpers)
 library(raster)
 ## library(rasterVis)
@@ -28,6 +28,9 @@ if (sys.nframe() == 0L) {
   m <- regexpr("(?<=^--file=).+", args, perl=TRUE)
   cwd <- dirname(regmatches(args, m))
 }
+
+## TESTING
+## cwd <- 'workflow/scripts'
 ## Load custom utilities
 source(file.path(cwd, "utils.R"))
 
@@ -109,8 +112,6 @@ for (m in 1:length(basins)) {
   pb <- txtProgressBar(min = 0, max = length(years), initial = 0)
   for (i in 1:length(years)) {
     year <- years[i]
-    ## ptn <- paste0("annual_precip_historical_", year, "_(.*).tif")
-    ## fn <- list.files(inputdir, ptn, full.names = TRUE)
     fn <- file.path(
       "results/JULES_vn6.1_irrig",
       paste0("annual_precip_historical_", year, "_irrig.tif")
@@ -132,8 +133,6 @@ for (m in 1:length(basins)) {
       season <- seasons[j]
       for (k in 1:length(types)) {
         type <- types[k]
-        ## ptn <- paste0(season, "_", type, "_irrigation_historical_", year, "_(.*).tif")
-        ## fn <- list.files(inputdir, ptn, full.names = TRUE)
         fn <- file.path(
           "results/JULES_vn6.1_irrig",
           paste0(
@@ -142,7 +141,9 @@ for (m in 1:length(basins)) {
             year, "_irrig.tif"
           )
         )
-        irrigation_basin_sum <- compute_basin_total(fn, basin_regions[[basin]])
+        irrigation_basin_sum <- compute_basin_total(
+          fn, basin_regions[[basin]]
+        )
         output_list[[length(output_list) + 1]] <- data.frame(
           year = year,
           season = season,
