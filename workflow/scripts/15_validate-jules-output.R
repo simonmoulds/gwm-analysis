@@ -9,30 +9,6 @@ library(raster)
 library(magrittr)
 library(zoo)
 
-## validation_output_dir = "../data/validation"
-## if (!dir.exists(validation_output_dir)) {
-##     dir.create(validation_output_dir)
-## }
-## jules_output_dir = "../jules-output"
-## id_stem = "JULES_vn6.1_upper_ganga"
-## profile_name = "daily_hydrology"
-## start_year = 2000
-## end_year = 2010
-## ## start_year = 1979
-## ## end_year = 2014
-## years = seq(start_year, end_year)
-
-years = 1979:2013
-## analysis_dir = "../data/analysis"
-## historical_analysis_dir = file.path(
-##     analysis_dir, "historical"
-## )
-## current_canal_analysis_dir = file.path(
-##     analysis_dir, "current_canal"
-## )
-## restored_canal_analysis_dir = file.path(
-##     analysis_dir, "restored_canal"
-## )
 
 ## ################################################################# ##
 ## ################################################################# ##
@@ -42,50 +18,29 @@ years = 1979:2013
 ## ################################################################# ##
 ## ################################################################# ##
 
-template_fn = paste0(id_stem, ".S2.", profile_name, ".2010.2D.year.nc")
-template = nc_open(file.path(jules_output_dir, template_fn))
-lats = ncvar_get(template, "lat")
-lons = ncvar_get(template, "lon")
-nlat = length(lats)
-nlon = length(lons)
-template_raster = raster(
-    ncol=nlon, nrow=nlat, xmn=60, xmx=100, ymn=20, ymx=40
-)
-template_raster[] = 0
+suite <- "u-ci496"
+id_stem <- "JULES_vn6.1_irrig"
+profile_name <- c("daily_hydrology")
+start_year <- 1980
+end_year <- 2010
+years <- seq(start_year, end_year)
+npoints <- 861
 
-reorder_array = function(arr) {
-    arr %<>% aperm(c(2,1)) %>% `[`(seq(nlat, 1),)
-    arr
-}
-add_to_raster = function(r, arr) {
-    r[] = as.matrix(r) + (arr %>% reorder_array)
-    r
-}
-
-wb_vars = c(
+wb_vars <- c(
     "rainfall", "precip", "surf_roff", "sub_surf_roff", "elake",
     "esoil_gb", "ecan_gb", "irrig_water", "fqw_gb", "runoff", "fao_et0",
     "snowfall"
 )
 
-## GWM:
-suite <- "u-ci496"
-id_stem <- "JULES_vn6.1_noirrig"
-profile_name <- c("daily_hydrology")
-start_year <- 1980
-end_year <- 2010
-years <- seq(start_year, end_year)
-npoints = 861
-
-wb_output =
-    lapply(wb_vars, FUN=function(x) rep(0, npoints)) %>%
+wb_output <-
+    lapply(wb_vars, FUN = function(x) rep(0, npoints)) %>%
     setNames(wb_vars)
 
 for (i in 1:length(years)) {
-    year = years[i]
+    year <- years[i]
     for (j in 1:length(profile_name)) {
-        fn = paste0(id_stem, ".S2.", profile_name[j], ".", year, ".nc")
-        nc = nc_open(file.path("~/JULES_output", suite, fn))
+        fn <- paste0(id_stem, ".jules_", year, ".daily_hydrology.", year, ".nc")
+        nc <- nc_open(file.path("~/JULES_output", suite, fn))
         for (var in wb_vars) {
             if (var %in% nc.get.variable.list(nc)) {
                 arr = ncvar_get(nc, var) * 60 * 60 * 24 # kg m-2 s-1 -> mm/d
@@ -97,26 +52,27 @@ for (i in 1:length(years)) {
     }
 }
 
-## NB Do not include elake because this is implicitly included in runoff
-precip = wb_output[["precip"]]
-irr = wb_output[["irrig_water"]]
-et = (
+## NB elake is implicitly included in runoff
+precip <- wb_output[["precip"]]
+irr <- wb_output[["irrig_water"]]
+et <- (
     wb_output[["esoil_gb"]]
     + wb_output[["ecan_gb"]]
 )
-runoff = (
+runoff <- (
     wb_output[["surf_roff"]]
     + wb_output[["sub_surf_roff"]]
 )
-wb = precip + irr - et - runoff
-wb_err = (wb / (precip + irr)) * 100
+wb <- precip + irr - et - runoff
+wb_err <- (wb / (precip + irr)) * 100
 
-snow_ix = wb_output[["snowfall"]] > 0
-mean(wb_err[ix])  # high error - accumulation of snow (more than 3m in some places?)
-mean(wb_err[!ix]) # low error
+snow_ix <- wb_output[["snowfall"]] > 1
+# There is relatively high error in snowy 
+# grid cells due to snow accumulation
+mean_wb_err_snow <- mean(wb_err[snow_ix])
+mean_wb_err_nosnow <- mean(wb_err[!snow_ix]) # relatively low error
+mean_wb_err <- mean(wb_err)
 
-## Mean annual irrigation
-mean_annual_irr = irr / length(years)
 
 ## ## ################################################################# ##
 ## ## ################################################################# ##
@@ -345,102 +301,100 @@ mean_annual_irr = irr / length(years)
 ## ## http://cgwb.gov.in/District_Profile/UP_districtprofile.html
 
 
-## ## ################################################################# ##
-## ## ################################################################# ##
-## ##
-## ## 2 - Comparison with GLEAM + MODIS ET
-## ##
-## ## ################################################################# ##
-## ## ################################################################# ##
+## ################################################################# ##
+## ################################################################# ##
+##
+## 2 - Comparison with GLEAM + MODIS ET
+##
+## ################################################################# ##
+## ################################################################# ##
 
-## ## TODO download GLEAM data to this PC
+get_jules_et_data <- function(year) { #, month) {
+    ## In these files, variables have units of m month-1
+    fn <- paste0(id_stem, ".jules_", year, ".daily_hydrology.", year, ".2D.month.nc")
+    ## JULES ET components: esoil_gb, ecan_gb, elake
+    r <- terra::rast(file.path("results/JULES_output", fn)) #, subds = "esoil")
+    esoil <- r["esoil_gb"] # TODO find units (mean rate?)
+    ecan <- r["ecan_gb"]
+    elake <- r["elake"]
+    et <- esoil + ecan + elake
+    return(et)
+}
 
-## ## gleam_datadir = "/mnt/scratch/scratch/data/GLEAM/data/v3.5b/monthly/"
-## ## gleam_components = c("E","Eb","Ei","Ep","Es","Et","Ew")
-## ## ## study_rgn_ext = extent(60, 100, 20, 40)
-## ## study_rgn_ext = extent(77, 81, 26, 32)
+dir.create("results/validation/gleam_comparison", recursive = TRUE)
 
-## ## get_jules_et_data = function(year, month) {
-## ##     fn = paste0(id_stem, ".S2.daily_hydrology.", year, ".2D.month.nc")
-## ##     jules = nc_open(file.path(jules_output_dir, fn))
-## ##     ## lat = ncvar_get(jules, "lat")
-## ##     ## lon = ncvar_get(jules, "lon")
-## ##     ## JULES ET components: esoil_gb, ecan_gb, elake
-## ##     esoil = ncvar_get(jules, "esoil_gb", start=c(1,1,month), count=c(80, 40, 1))
-## ##     ecan = ncvar_get(jules, "ecan_gb", start=c(1,1,month), count=c(80, 40, 1))
-## ##     elake = ncvar_get(jules, "elake", start=c(1,1,month), count=c(80, 40, 1))
-## ##     et = array(data=NA, dim=c(3, 80, 40))
-## ##     et[1,,] = esoil
-## ##     et[2,,] = ecan
-## ##     et[3,,] = elake
-## ##     et = apply(et, MARGIN=c(2,3), FUN=sum, na.rm=T)
-## ##     et = aperm(et, c(2,1))
-## ##     et = et[rev(seq_len(nrow(et))),]
-## ##     r = raster(nrows=40, ncols=80, xmn=60, xmx=100, ymn=20, ymx=40)
-## ##     r[] = et
-## ##     r
-## ## }
+# india_cmd_area <- terra::rast("results/india_command_area.tif")
+# india_cmd_area_west <- terra::rast("results/india_command_area_west.tif")
+# india_cmd_area_east <- terra::rast("results/india_command_area_east.tif")
+# study_rgn_ext <- terra::ext(india_cmd_area)
+cmd_areas <- st_read("resources/irrigation/command_areas.shp")
 
-## ## ## Get time from one of the GLEAM files
-## ## fn = paste0("E_2003-2020_GLEAM_v3.5b_MO.nc")
-## ## gleam = nc_open(file.path(gleam_datadir, fn))
-## ## time_raw = ncvar_get(gleam, "time")
-## ## time_decoded =
-## ##     nc.get.time.series(gleam, time.dim.name="time") %>%
-## ##     as.character
-## ## time_yearmon = as.yearmon(time_decoded)
-## ## nc_close(gleam)
+gleam_datadir <- "/var/data/scratch/data/GLEAM/data/v3.5b/monthly/"
+gleam_components <- c("E", "Eb", "Ei", "Ep", "Es", "Et", "Ew")
 
-## ## ## Get the times for which JULES also has data
-## ## start_year = 2000
-## ## end_year = 2010
-## ## time_years = time_yearmon %>% format("%Y")
-## ## jules_time_yearmon = time_yearmon[time_years %in% seq(start_year, end_year)]
+## Get time from one of the GLEAM files
+fn <- paste0("E_2003-2020_GLEAM_v3.5b_MO.nc")
+gleam <- terra::rast(file.path(gleam_datadir, fn))
+time_decoded <- terra::time(gleam)
+time_yearmon <- as.yearmon(time_decoded)
 
-## ## gleam_comparison_output_dir = file.path(validation_output_dir, "gleam_comparison")
-## ## if (!dir.exists(gleam_comparison_output_dir)) {
-## ##     dir.create(gleam_comparison_output_dir)
-## ## }
+## Get the times for which JULES also has data
+start_year <- 1979
+end_year <- 2010
+time_years <- time_yearmon %>% format("%Y")
+jules_time_yearmon <- time_yearmon[time_years %in% seq(start_year, end_year)]
 
-## ## ## Loop through each component
-## ## for (j in 1:length(time_yearmon)) {
-## ##     print(time_yearmon[j])
-## ##     year = time_yearmon[j] %>% format("%Y") %>% as.integer
-## ##     month = time_yearmon[j] %>% format("%m") %>% as.integer
-## ##     lst = vector(mode="list", length=length(gleam_components))
-## ##     names(lst) = gleam_components
-## ##     for (i in 1:length(gleam_components)) {
-## ##         component = gleam_components[i]
-## ##         fn = paste0(component, "_", "2003-2020_GLEAM_v3.5b_MO.nc")
-## ##         gleam = nc_open(file.path(gleam_datadir, fn))
-## ##         et = ncvar_get(gleam, component, start=c(1,1,j), count=c(720, 1440, 1))
-## ##         r = raster(nrows=720, ncols=1440)
-## ##         r[] = et / 1000
-## ##         r %<>% crop(study_rgn_ext) %>% aggregate(fact=2, FUN=mean)
-## ##         lst[[i]] = r
-## ##         nc_close(gleam)
-## ##     }
-## ##     ## Write E (= Eb + Ei + Es + Et + Ew)
-## ##     writeRaster(
-## ##         lst$E,
-## ##         file.path(
-## ##             validation_output_dir,
-## ##             paste0("gleam_et_", year, "_", month, ".tif")
-## ##         ),
-## ##         overwrite=TRUE
-## ##     )
-## ##     if (time_yearmon[j] %in% jules_time_yearmon) {
-## ##         jules_et = get_jules_et_data(year, month) %>% crop(study_rgn_ext)
-## ##         writeRaster(
-## ##             jules_et,
-## ##             file.path(
-## ##                 validation_output_dir,
-## ##                 paste0("jules_et_", year, "_", month, ".tif")
-## ##             ),
-## ##             overwrite=TRUE
-## ##         )
-## ##     }
-## ## }
+## Loop through each component
+for (j in 1:length(time_yearmon)) {
+    year <- time_yearmon[j] %>% format("%Y") %>% as.integer
+    month <- time_yearmon[j] %>% format("%m") %>% as.integer
+    lst <- vector(mode = "list", length = length(gleam_components))
+    names(lst) <- gleam_components
+    for (i in 1:length(gleam_components)) {
+        component <- gleam_components[i]
+        fn <- paste0(component, "_", "2003-2020_GLEAM_v3.5b_MO.nc")
+        ## Note that opening netcdf with terra::rast(...) doesn't work on 
+        ## these files (latitude read as longitude and vice versa)
+        gleam <- nc_open(file.path(gleam_datadir, fn))
+        et <- ncvar_get(gleam, component, start=c(1,1,j), count=c(720, 1440, 1))
+        r <- terra::rast(et)
+        ext(r) <- ext(-180, 180, -90, 90)
+        crs(r) <- "epsg:4326"
+        r <- r / 1000
+        r <- r %>% 
+            terra::crop(study_rgn_ext) %>% 
+            aggregate(fact = 2, FUN = mean)
+        lst[[i]] <- r
+        nc_close(gleam)
+    }
+    st <- terra::rast(lst)
+    area_tot_list <- exact_extract(st, cmd_areas, coverage_area = TRUE)
+    for (i in 1:length(area_tot_list)) { 
+        area_tot <- area_tot_list[[i]]
+        area_tot <- colSums(area_tot) #%>% tibble() %>% mutate(ID=id)
+    }
+
+    ## Write E (= Eb + Ei + Es + Et + Ew)
+    writeRaster(
+        lst[["E"]],
+        file.path(
+            "results/validation/gleam_comparison",
+            paste0("gleam_et_", year, "_", month, ".tif")
+        ),
+        overwrite = TRUE
+    )
+    if (time_yearmon[j] %in% jules_time_yearmon) {
+        jules_et <- get_jules_et_data(year, month) %>% crop(study_rgn_ext)
+        writeRaster(
+            jules_et,
+            file.path(
+                validation_output_dir,
+                paste0("jules_et_", year, "_", month, ".tif")
+            ),
+            overwrite = TRUE
+        )
+    }
+}
 
 ## ## ## TODO: do something with the plots, e.g.:
 ## ## jules_et_jul_2010 = raster(file.path(validation_output_dir, "jules_et_2010_7.tif"))

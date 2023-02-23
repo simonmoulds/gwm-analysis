@@ -22,6 +22,19 @@ year_months <- 11:22 # Nov-Oct (year+1)
 reference_year <- 2010
 
 ## Function definitions 
+compute_basin_total <- function(fn, basin) {
+  r = raster(fn)
+  r = resample(r, ganges_basin, method="ngb")
+  r = r / 1000 # m -> km
+  basin_area = basin * grid_cell_area
+  r = r * basin_area
+  basin_sum = sum(getValues(r), na.rm=TRUE) # km3
+  basin_area = sum(getValues(basin_area), na.rm=TRUE)
+  basin_avg = (basin_sum / (basin_area)) * 1000
+  basin_avg
+}
+
+
 
 get_jules_month_data <- function(datadir,
                                  year,

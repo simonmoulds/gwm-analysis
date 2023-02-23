@@ -30,6 +30,7 @@ source(file.path(cwd, "utils.R"))
 source(file.path(cwd, "plotting.R"))
 
 ## TODO (additional plot ideas)
+## * Fig 2 but for Rabi - put in supplementary material
 ## * Mean water demand in Kharif and Rabi
 ## * Scatter plot of Kharif/rabi precip against mean dS
 ## * Scatter plot of precipitation anomaly against annual dS in east/west basin regions
@@ -47,153 +48,54 @@ source(file.path(cwd, "plotting.R"))
 ## ####################################################### ##
 ## ####################################################### ##
 
-ganges_basin = raster("resources/land.nc", varname='mask')
-ganges_basin[ganges_basin==0] = NA
+# Years in simulation
+years <- 1979:2013
 
-## Identify canal command area
-cmd_area = st_read("resources/irrigation/command_areas.shp")
-## Pakistan and West Bengal are outside of the study region
-pakistan_ids = c(1:5, 8:14, 16, 20, 37, 41)
-west_bengal_ids = c(31, 34, 42, 43, 44)
-india_cmd_area =
-  cmd_area %>%
-  filter(!ID %in% c(pakistan_ids, west_bengal_ids))
-## Convert to sp for plotting with raster
-india_cmd_area_sp = india_cmd_area %>% as_Spatial()
-india_cmd_area = rasterize(india_cmd_area_sp, ganges_basin, field = "ID")
-india_cmd_area[india_cmd_area > 0] = 1
-india_cmd_area_poly = rasterToPolygons(
-  india_cmd_area, dissolve = TRUE
-) %>% st_as_sf()
+# Irrigation sources
+types <- c("gw", "sw", "total")
 
-## Create raster images of the east and west portion of the basin
-## TODO check this is consistent with the literature
-ew_divide = colFromX(india_cmd_area, 79.125)
-india_cmd_area_west = india_cmd_area
-india_cmd_area_west[,ew_divide:160] = NA
-india_cmd_area_east = india_cmd_area
-india_cmd_area_east[,1:(ew_divide - 1)] = NA
+# India comand areas as polygon, for plotting
+india_cmd_area_poly <- st_read("results/plotting/india_command_area.gpkg")
 
-## Create a list of basin regions which we can loop through
-basin_regions <- list(
-  igp=india_cmd_area,
-  igp_east = india_cmd_area_east,
-  igp_west = india_cmd_area_west
+# Global map for plotting
+world <- ne_countries(
+  scale = "small", 
+  continent = "asia", 
+  returnclass = "sf"
 )
-grid_cell_area <- raster::area(india_cmd_area) # km2
 
-## ## Create directories for output
-## historical_analysis_dir <- file.path(outputdir, "historical")
-## current_canal_analysis_dir <- file.path(outputdir, "current_canal")
-## restored_canal_analysis_dir <- file.path(outputdir, "restored_canal")
+# All data used in plots
+sw_kharif_maps <- stack("results/plotting/historical_sw_kharif_ts.tif")
+gw_kharif_maps <- stack("results/plotting/historical_gw_kharif_ts.tif")
+sw_rabi_maps <- stack("results/plotting/historical_sw_rabi_ts.tif")
+gw_rabi_maps <- stack("results/plotting/historical_gw_rabi_ts.tif")
+precip_maps <- stack("results/plotting/historical_precip_ts.tif")
+pet_maps <- stack("results/plotting/historical_pet_ts.tif")
+aridity_maps <- stack("results/plotting/historical_aridity_ts.tif")
 
-## For spatial plots
-world <- ne_countries(scale="small", continent="asia", returnclass="sf")
-india <-
-  st_read(file.path("resources", "GIS-shapefiles-1966base", "india70again.shp")) %>%
-  as_Spatial()
+irr_area <- raster("results/plotting/current_irrigated_area.tif")
+current_canal_area <- raster("results/plotting/current_canal_area.tif")
+restored_canal_area <- raster("results/plotting/restored_canal_area.tif")
+current_gw_area <- raster("results/plotting/current_gw_area.tif") 
 
-india$ID = 1
-india = rasterize(india, ganges_basin, field = "ID")
-india[india_cmd_area == 1] = 1
+historical_water_balance_maps <- stack("results/plotting/historical_water_balance_ts.tif")
+dS_historical_mean <- raster("results/plotting/dS_historical_mean.tif")
+dS_current_mean <- raster("results/plotting/dS_current_canal_ts.tif")
+dS_restored_mean <- raster("results/plotting/dS_restored_canal_ts.tif")
+
+historical_irrigation_demand_ts <- readRDS("results/plotting/historical_irrigation_demand_ts.rds")
+historical_water_balance_ts <- readRDS("results/plotting/historical_water_balance_ts.rds")
+scenario_water_balance_ts <- readRDS("results/plotting/scenario_water_balance_ts.rds")
 
 ## Variables for plotting
-axis_title_size = 6
-axis_label_size = 6
-axis_label_size_small = 6
-legend_label_size = 6
-legend_title_size = 6
-tag_label_size = 6
-strip_label_size = 6
-
-## ####################################################### ##
-## ####################################################### ##
-##
-## Historical time series
-##
-## ####################################################### ##
-## ####################################################### ##
-
-overwrite = TRUE
-years = 1979:2013
-seasons = c("kharif", "rabi", "zaid", "continuous")
-types = c("gw", "sw", "total")
-basins = names(basin_regions)
-
-compute_basin_total = function(fn, basin) {
-  r = raster(fn)
-  r = resample(r, ganges_basin, method="ngb")
-  r = r / 1000 # m -> km
-  basin_area = basin * grid_cell_area
-  r = r * basin_area
-  basin_sum = sum(getValues(r), na.rm=TRUE) # km3
-  basin_area = sum(getValues(basin_area), na.rm=TRUE)
-  basin_avg = (basin_sum / (basin_area)) * 1000
-  basin_avg
-}
-
-## ## TODO make this its own script because it takes so long
-## ## overwrite = FALSE
-## ## if (overwrite | !file.exists("historical_irrigation_demand_ts.rds")) {
-## output_list = list()
-## for (m in 1:length(basins)) {
-##   ## basin = basins[m]; print(basin)
-##   print(sprintf("Extracting data for basin %s", basin))
-##   pb = txtProgressBar(min = 0, max = length(years), initial = 0)
-##   for (i in 1:length(years)) {
-##     year <- years[i]
-##     fn <- file.path(
-##       historical_analysis_dir,
-##       paste0("annual_precip_historical_", year, "_noirrig.tif")
-##     )
-##     precip_basin_sum <- compute_basin_total(fn, basin_regions[[basin]])
-##     et_basin_sum <- compute_basin_total(
-##       fn %>% gsub("precip", "et", .),
-##       basin_regions[[basin]]
-##     )
-##     surf_roff_basin_sum <- compute_basin_total(
-##       fn %>% gsub("precip", "surf_roff", .),
-##       basin_regions[[basin]]
-##     )
-##     sub_surf_roff_basin_sum <- compute_basin_total(
-##       fn %>% gsub("precip", "sub_surf_roff", .),
-##       basin_regions[[basin]]
-##     )
-##     for (j in 1:length(seasons)) {
-##       season <- seasons[j]
-##       for (k in 1:length(types)) {
-##         type <- types[k]
-##         fn <- file.path(
-##           historical_analysis_dir,
-##           paste0(
-##             season, "_", type,
-##             "_irrigation_historical_",
-##             year, "_irrig.tif"
-##           )
-##         )
-##         irrigation_basin_sum <- compute_basin_total(fn, basin_regions[[basin]])
-##         output_list[[length(output_list) + 1]] <- data.frame(
-##           year = year,
-##           season = season,
-##           types = type,
-##           basin = basin,
-##           irrigation = irrigation_basin_sum,
-##           precip = precip_basin_sum,
-##           et = et_basin_sum,
-##           surf_roff = surf_roff_basin_sum,
-##           sub_surf_roff = sub_surf_roff_basin_sum
-##         )
-##       }
-##     }
-##     setTxtProgressBar(pb, i)
-##   }
-##   close(pb)
-## }
-## historical_ts = do.call("rbind", output_list) %>% as_tibble()
-## saveRDS(output, "historical_irrigation_demand_ts.rds")
-## } else {
-##   historical_ts = readRDS("historical_irrigation_demand_ts.rds")
-## }
+axis_title_size <- 6
+axis_label_size <- 6
+axis_label_size_small <- 6
+legend_label_size <- 6
+legend_title_size <- 6
+tag_label_size <- 6
+strip_label_size <- 6
+fig1_keywidth <- 0.3
 
 ## ####################################################### ##
 ## ####################################################### ##
@@ -203,94 +105,102 @@ compute_basin_total = function(fn, basin) {
 ## ####################################################### ##
 ## ####################################################### ##
 
-## Load some maps for plotting
-sw_kharif_maps = list()
-gw_kharif_maps = list()
-sw_rabi_maps = list()
-gw_rabi_maps = list()
-precip_maps = list()
-pet_maps = list()
-aridity_maps = list()
+# ## Load some maps for plotting
+# sw_kharif_maps <- list()
+# gw_kharif_maps <- list()
+# sw_rabi_maps <- list()
+# gw_rabi_maps <- list()
+# precip_maps <- list()
+# pet_maps <- list()
+# aridity_maps <- list()
+#
+# for (i in 1:length(years)) {
+#
+#   sw_kharif_total <- list.files(
+#     "resources/irrigated_area_maps/",
+#     pattern = paste0("icrisat_kharif_(canal|other_sources|tanks)_", years[i], "_india_0.500000Deg.tif"),
+#     full.names = TRUE
+#   ) %>%
+#     raster::stack() %>%
+#     stackApply(indices = c(1, 1, 1), fun = sum) %>%
+#     resample(india_cmd_area) %>%
+#     `*`(india_cmd_area)
+#
+#   gw_kharif_total <- list.files(
+#     "resources/irrigated_area_maps/",
+#     pattern = paste0("icrisat_kharif_(other_wells|tubewells)_", years[i], "_india_0.500000Deg.tif"),
+#     full.names = TRUE
+#   ) %>%
+#     raster::stack() %>%
+#     stackApply(indices = c(1, 1), fun = sum) %>%
+#     resample(india_cmd_area) %>%
+#     `*`(india_cmd_area)
+#
+#   sw_rabi_total <- list.files(
+#     "resources/irrigated_area_maps/",
+#     pattern = paste0("icrisat_rabi_(canal|other_sources|tanks)_", years[i], "_india_0.500000Deg.tif"),
+#     full.names = TRUE
+#   ) %>%
+#     raster::stack() %>%
+#     stackApply(indices = c(1, 1), fun = sum) %>%
+#     resample(india_cmd_area) %>%
+#     `*`(india_cmd_area)
+#
+#   gw_rabi_total <- list.files(
+#     "resources/irrigated_area_maps/",
+#     pattern = paste0("icrisat_rabi_(other_wells|tubewells)_", years[i], "_india_0.500000Deg.tif"),
+#     full.names = TRUE
+#   ) %>%
+#     raster::stack() %>%
+#     stackApply(indices = c(1, 1), fun = sum) %>%
+#     resample(india_cmd_area) %>%
+#     `*`(india_cmd_area)
+#
+#   precip_total <- list.files(
+#     "results/JULES_vn6.1_irrig",
+#     pattern = paste0("annual_precip_historical_", years[i], "_irrig.tif"),
+#     full.names = TRUE
+#   ) %>%
+#     raster::raster() %>%
+#     resample(india_cmd_area) %>%
+#     `*`(india_cmd_area)
+#
+#   pet_total <- list.files(
+#     "results/JULES_vn6.1_irrig",
+#     pattern = paste0("annual_pet_historical_", years[i], "_irrig.tif"),
+#     full.names = TRUE
+#   ) %>%
+#     raster::raster() %>%
+#     resample(india_cmd_area) %>%
+#     `*`(india_cmd_area)
+#
+#   sw_kharif_maps[[i]] <- sw_kharif_total * raster::area(sw_kharif_total)
+#   gw_kharif_maps[[i]] <- gw_kharif_total * raster::area(gw_kharif_total)
+#   sw_rabi_maps[[i]] <- sw_rabi_total * raster::area(sw_rabi_total)
+#   gw_rabi_maps[[i]] <- gw_rabi_total * raster::area(gw_rabi_total)
+#   precip_maps[[i]] <- precip_total
+#   pet_maps[[i]] <- pet_total
+#   aridity_index <- precip_total / pet_total
+#   aridity_maps[[i]] <- aridity_index
+# }
+#
+# ## Promote to RasterStack
+# sw_kharif_maps <- stack(sw_kharif_maps)
+# gw_kharif_maps <- stack(gw_kharif_maps)
+# sw_rabi_maps <- stack(sw_rabi_maps)
+# gw_rabi_maps <- stack(gw_rabi_maps)
+# precip_maps <- stack(precip_maps)
+# pet_maps <- stack(pet_maps)
+# aridity_maps <- stack(aridity_maps)
 
-for (i in 1:length(years)) {
+# sw_kharif_maps <- stack("results/historical_sw_kharif_ts.tif")
+# gw_kharif_maps <- stack("results/historical_gw_kharif_ts.tif")
+# sw_rabi_maps <- stack("results/historical_sw_rabi_ts.tif")
+# gw_rabi_maps <- stack("results/historical_gw_rabi_ts.tif")
+# precip_maps <- stack("results/historical_precip_ts.tif")
+# pet_maps <- stack("results/historical_pet_ts.tif")
+# aridity_maps <- stack("results/historical_aridity_ts.tif")
 
-  sw_kharif_total <- list.files(
-    "resources/irrigated_area_maps/",
-    pattern = paste0("icrisat_kharif_(canal|other_sources|tanks)_", years[i], "_india_0.500000Deg.tif"),
-    full.names = TRUE
-  ) %>%
-    raster::stack() %>%
-    stackApply(indices = c(1, 1, 1), fun = sum) %>%
-    resample(india_cmd_area) %>%
-    `*`(india_cmd_area)
-
-  gw_kharif_total <- list.files(
-    "resources/irrigated_area_maps/",
-    pattern = paste0("icrisat_kharif_(other_wells|tubewells)_", years[i], "_india_0.500000Deg.tif"),
-    full.names = TRUE
-  ) %>%
-    raster::stack() %>%
-    stackApply(indices = c(1, 1), fun = sum) %>%
-    resample(india_cmd_area) %>%
-    `*`(india_cmd_area)
-
-  sw_rabi_total <- list.files(
-    "resources/irrigated_area_maps/",
-    pattern = paste0("icrisat_rabi_(canal|other_sources|tanks)_", years[i], "_india_0.500000Deg.tif"),
-    full.names = TRUE
-  ) %>%
-    raster::stack() %>%
-    stackApply(indices = c(1, 1), fun = sum) %>%
-    resample(india_cmd_area) %>%
-    `*`(india_cmd_area)
-
-  gw_rabi_total <- list.files(
-    "resources/irrigated_area_maps/",
-    pattern = paste0("icrisat_rabi_(other_wells|tubewells)_", years[i], "_india_0.500000Deg.tif"),
-    full.names = TRUE
-  ) %>%
-    raster::stack() %>%
-    stackApply(indices = c(1, 1), fun = sum) %>%
-    resample(india_cmd_area) %>%
-    `*`(india_cmd_area)
-
-  precip_total = list.files(
-    "results/JULES_vn6.1_irrig",
-    pattern = paste0("annual_precip_historical_", years[i], "_irrig.tif"),
-    full.names = TRUE
-  ) %>%
-    raster::raster() %>%
-    resample(india_cmd_area) %>%
-    `*`(india_cmd_area)
-
-  pet_total = list.files(
-    "results/JULES_vn6.1_irrig",
-    pattern = paste0("annual_pet_historical_", years[i], "_irrig.tif"),
-    full.names = TRUE
-  ) %>%
-    raster::raster() %>%
-    resample(india_cmd_area) %>%
-    `*`(india_cmd_area)
-
-  aridity_index = precip_total / pet_total
-
-  sw_kharif_maps[[i]] = sw_kharif_total * raster::area(sw_kharif_total)
-  gw_kharif_maps[[i]] = gw_kharif_total * raster::area(gw_kharif_total)
-  sw_rabi_maps[[i]] = sw_rabi_total * raster::area(sw_rabi_total)
-  gw_rabi_maps[[i]] = gw_rabi_total * raster::area(gw_rabi_total)
-  precip_maps[[i]] = precip_total
-  pet_maps[[i]] = pet_total
-  aridity_maps[[i]] = aridity_index
-}
-
-## Promote to RasterStack
-sw_kharif_maps = stack(sw_kharif_maps)
-gw_kharif_maps = stack(gw_kharif_maps)
-sw_rabi_maps = stack(sw_rabi_maps)
-gw_rabi_maps = stack(gw_rabi_maps)
-precip_maps = stack(precip_maps)
-pet_maps = stack(pet_maps)
-aridity_maps = stack(aridity_maps)
 
 ## TODO move above to a separate script and save input datasets as RData file
 
@@ -302,20 +212,14 @@ aridity_maps = stack(aridity_maps)
 ## ####################################################### ##
 ## ####################################################### ##
 
-fig1_keywidth = 0.3
 
-current_canal_area = raster(
-  file.path(
-    "results/irrigated_area_maps",
-    "icrisat_kharif_canal_2010_india_0.500000Deg_current_canal.tif"
-  )
-)
-current_canal_area = resample(current_canal_area, india, method = "ngb")
-current_canal_area = current_canal_area * india_cmd_area
-p1 <- myplotfun1(current_canal_area)
 labelfun <- function(x) { ifelse((x %% 0.1) == 0, x, "") }
-breaks <- seq(0, 0.6, by=0.01)
+breaks <- seq(0, 0.6, by = 0.01)
 nbreaks <- length(breaks)
+
+
+# Panel a: Current canal area
+p1 <- myplotfun1(current_canal_area)
 p1 <- p1 +
   scale_fill_stepsn(
     colours = RColorBrewer::brewer.pal(9, "Blues"),
@@ -338,19 +242,8 @@ p1 <- p1 +
     )
   )
 
-current_gw_area = stack(
-  list.files(
-    "results/irrigated_area_maps",
-    pattern = "icrisat_kharif_(other_wells|tubewells)_2010_india_0.500000Deg_current_canal.tif",
-    full.names = TRUE
-  )
-) %>% stackApply(indices = c(1,1), fun = sum)
-current_gw_area = resample(current_gw_area, india, method = "ngb")
-current_gw_area = current_gw_area * india_cmd_area
+# Panel b: Current groundwater area
 p2 <- myplotfun1(current_gw_area)
-labelfun <- function(x) { ifelse((x %% 0.1) == 0, x, "") }
-breaks <- seq(0, 0.6, by=0.01)
-nbreaks <- length(breaks)
 p2 <- p2 +
   scale_fill_stepsn(
     colours = RColorBrewer::brewer.pal(9, "Blues"),
@@ -373,19 +266,22 @@ p2 <- p2 +
     )
   )
 
+# Panel c: Surface water irrigation trend
 trend <- raster.kendall(terra::rast(sw_kharif_maps), p.value = TRUE)
 slope <- raster(trend$slope)
 pval <- raster(trend$p.value)
-signif = pval <= 0.05
-signif_pts = as(signif, "SpatialPointsDataFrame")
-signif_pts = signif_pts[signif_pts$layer > 0,]
-signif_pts = st_as_sf(signif_pts)
+signif <- pval <= 0.05
+signif_pts <- as(signif, "SpatialPointsDataFrame")
+signif_pts <- signif_pts[signif_pts$layer > 0,]
+signif_pts <- st_as_sf(signif_pts)
+
 ## slope = slope * 1000 # meter/year -> mm/year
-p3 <- myplotfun1(slope)
 labelfun <- function(x) { ifelse((x %% 1) == 0, x, "") }
 breaks <- seq(-5, 3.5, 0.05)
 nbreaks <- length(breaks)
-rdbu_pal = RColorBrewer::brewer.pal(9, "RdBu")
+rdbu_pal <- RColorBrewer::brewer.pal(9, "RdBu")
+
+p3 <- myplotfun1(slope)
 p3 <- p3 +
   geom_sf(data = signif_pts, size = 0.01, shape = 20) +
   scale_fill_stepsn(
@@ -409,21 +305,22 @@ p3 <- p3 +
     )
   )
 
+
+# Panel d: Trend in groundwater irrigation
 trend <- raster.kendall(terra::rast(gw_kharif_maps), p.value = TRUE)
-## st <- st * india_cmd_area
 slope <- raster(trend$slope)
 pval <- raster(trend$p.value)
-signif = pval <= 0.05
-signif_pts = as(signif, "SpatialPointsDataFrame")
-signif_pts = signif_pts[signif_pts$layer > 0,]
-signif_pts = st_as_sf(signif_pts)
+signif <- pval <= 0.05
+signif_pts <- as(signif, "SpatialPointsDataFrame")
+signif_pts <- signif_pts[signif_pts$layer > 0,]
+signif_pts <- st_as_sf(signif_pts)
+
 ## slope = slope * 1000 # meter/year -> mm/year
-p4 <- myplotfun1(slope)
 labelfun <- function(x) { ifelse((x %% 1) == 0, x, "") }
 breaks <- seq(0, 7.5, 0.05)
 nbreaks <- length(breaks)
-## rdbu_pal = RColorBrewer::brewer.pal(9, "Blues")
-rdbu_pal = RColorBrewer::brewer.pal(9, "RdBu")[5:9]
+p4 <- myplotfun1(slope)
+rdbu_pal <- RColorBrewer::brewer.pal(9, "RdBu")[5:9]
 p4 <- p4 +
   geom_sf(data = signif_pts, size = 0.01, shape = 20) +
   scale_fill_stepsn(
@@ -447,10 +344,8 @@ p4 <- p4 +
     )
   )
 
-## TODO kharif gw/sw stack plot
-historical_ts <- readRDS("results/historical_irrigation_demand_ts.rds")
 x <-
-  historical_ts %>%
+  historical_irrigation_demand_ts %>%
   filter(season %in% "kharif" & types %in% c("gw", "sw")) %>%
   dplyr::select(-(precip:sub_surf_roff)) %>%
   rename(volume = irrigation)
@@ -470,10 +365,6 @@ p12 <-
     legend.box.margin = margin(-10, 0, -5, 0)
   )
 
-## ggsave("results/figure_test.png", width = 6, height = 6, units = "in")
-
-## p3 <- p3 + theme(legend.margin = margin(0, 0, 0, 0), legend.box.margin = margin(-10, 0, -5, 0))
-## p4 <- p4 + theme(legend.margin = margin(0, 0, 0, 0), legend.box.margin = margin(-10, 0, -5, 0))
 p34 <-
   p3 + p4 + plot_layout(ncol = 2, guides = "keep") &
   theme(
@@ -489,7 +380,7 @@ p12$patches$plots[[1]] =
   labs(tag = "a") +
   theme(plot.tag.position = c(0.14, 1.035),
         plot.tag = element_text(size = tag_label_size, face="bold"))
-p12 = p12 +
+p12 <- p12 +
   labs(tag = "b") +
   theme(plot.tag.position = c(0.14, 1),
         plot.tag = element_text(vjust = -0.7, size = tag_label_size, face="bold"))
@@ -498,7 +389,7 @@ p34$patches$plots[[1]] =
   labs(tag = "c") +
   theme(plot.tag.position = c(0.14, 1.035),
         plot.tag = element_text(size = tag_label_size, face="bold"))
-p34 = p34 +
+p34 <- p34 +
   labs(tag = "d") +
   theme(plot.tag.position = c(0.14, 1),
         plot.tag = element_text(vjust = -0.7, size = tag_label_size, face="bold"))
@@ -509,7 +400,7 @@ p67$patches$plots[[1]] =
   theme(plot.tag.position = c(0.14, 1.06),
         plot.tag = element_text(size = tag_label_size, face="bold"))
 
-p67 = p67 +
+p67 <- p67 +
   labs(tag = "g") +
   theme(plot.tag.position = c(0.14, 1.02),
         plot.tag = element_text(vjust = -0.7, size = tag_label_size, face="bold"))
@@ -529,13 +420,9 @@ p567$patches$plots[[1]] =
   theme(plot.tag.position = c(0.14, 1.025),
         plot.tag = element_text(size = tag_label_size, face="bold"))
 
-## plot_grid(p12, p34, p567, nrow=3)
-## aligned = align_plots(p34, p567, align = "v")
-library(cowplot)
-fig2 <- plot_grid(p12, p34, p567, nrow=3, align = "v")
+fig2 <- plot_grid(p12, p34, p567, nrow = 3, align = "v")
 ggsave("results/fig/figure2.png", width = 6, height = 7.5, units = "in")
 
-## Rabi - same as above plot, but put in supplementary material
 
 ## ####################################################### ##
 ## ####################################################### ##
@@ -545,46 +432,38 @@ ggsave("results/fig/figure2.png", width = 6, height = 7.5, units = "in")
 ## ####################################################### ##
 ## ####################################################### ##
 
-years = 1979:2013
-output_map_list = list()
-pb = txtProgressBar(min = 0, max = length(years), initial = 0)
-for (i in 1:(length(years)-1)) {
-  year = years[i]
-  recharge_fn = file.path(
-    'results/JULES_vn6.1_irrig',
-    sprintf("recharge_historical_%d_irrig.tif", year)
-  )
-  recharge_map = raster(recharge_fn)
-  abstraction_fn = file.path(
-    'results/JULES_vn6.1_irrig',
-    sprintf("abstraction_historical_%d_irrig.tif", year)
-  )
-  abstraction_map = raster(abstraction_fn)
-  dS_map = recharge_map - abstraction_map
-  dS_map = resample(dS_map, india_cmd_area)
-  dS_map = dS_map * india_cmd_area
-  output_map_list[[length(output_map_list) + 1]] = dS_map
-  setTxtProgressBar(pb, i)
-}
-close(pb)
+# years <- 1979:2013
+# output_map_list <- list()
+# pb <- txtProgressBar(min = 0, max = length(years), initial = 0)
+# for (i in 1:(length(years)-1)) {
+#   year <- years[i]
+#   recharge_fn <- file.path(
+#     'results/JULES_vn6.1_irrig',
+#     sprintf("recharge_historical_%d_irrig.tif", year)
+#   )
+#   recharge_map <- raster(recharge_fn)
+#   abstraction_fn <- file.path(
+#     'results/JULES_vn6.1_irrig',
+#     sprintf("abstraction_historical_%d_irrig.tif", year)
+#   )
+#   abstraction_map <- raster(abstraction_fn)
+#   dS_map <- recharge_map - abstraction_map
+#   dS_map <- resample(dS_map, india_cmd_area)
+#   dS_map <- dS_map * india_cmd_area
+#   output_map_list[[length(output_map_list) + 1]] <- dS_map
+#   setTxtProgressBar(pb, i)
+# }
+# close(pb)
 
-## 2a Mean annual net storage change (recharge - abstraction)
-st = stack(output_map_list)
-dS_mean = stackApply(st, indices=rep(1, nlayers(st)), fun=mean)
-p1 <- myplotfun1(dS_mean)
-## p1 <- p1 +
-##   scale_fill_stepsn(
-##     colours = RColorBrewer::brewer.pal(9, "Blues"), # TODO change color scheme
-##     ## breaks = seq(0, 0.5, by=0.025),
-##     ## limits = c(0, 0.5),
-##     ## labels = labelfun,
-##     na.value = "grey"
-##   ) +
-##   theme(legend.key.height = unit(0.2, "cm"), legend.key.width = unit(0.4, "cm"))
+# dS_mean <- stackApply(historical_water_balance_maps, indices = rep(1, nlayers(st)), fun = mean)
+
+# Panel a: Mean annual net storage change (recharge - abstraction)
 labelfun <- function(x) { ifelse((x %% 0.1) == 0, x, "") }
 breaks <- seq(-0.4, 0.6, 0.01)
 nbreaks <- length(breaks)
-rdbu_pal = RColorBrewer::brewer.pal(9, "RdBu")
+rdbu_pal <- RColorBrewer::brewer.pal(9, "RdBu")
+
+p1 <- myplotfun1(dS_historical_mean)
 p1 <- p1 +
   ## geom_sf(data = signif_pts, size = 0.01, shape = 20) +
   scale_fill_stepsn(
@@ -609,23 +488,24 @@ p1 <- p1 +
     )
   )
 
-## 2b Trend in annual net storage change (recharge - abstraction)
-st <- stack(output_map_list)
-st <- resample(st, india_cmd_area)
-st <- st * india_cmd_area
-trend <- raster.kendall(terra::rast(st), p.value = TRUE)
+# Panel b Trend in annual net storage change (recharge - abstraction)
+# st <- resample(st, india_cmd_area)
+# st <- st * india_cmd_area
+trend <- raster.kendall(terra::rast(historical_water_balance_maps), p.value = TRUE)
 slope <- raster(trend$slope)
 pval <- raster(trend$p.value)
-signif = pval <= 0.05
-signif_pts = as(signif, "SpatialPointsDataFrame")
-signif_pts = signif_pts[signif_pts$layer > 0,]
-signif_pts = st_as_sf(signif_pts)
-slope = slope * 1000 # meter/year -> mm/year
-p2 <- myplotfun1(slope)
+signif <- pval <= 0.05
+signif_pts <- as(signif, "SpatialPointsDataFrame")
+signif_pts <- signif_pts[signif_pts$layer > 0,]
+signif_pts <- st_as_sf(signif_pts)
+slope <- slope * 1000 # meter/year -> mm/year
+
 labelfun <- function(x) { ifelse((x %% 5) == 0, x, "") }
 breaks <- seq(-18, 8, 0.1)
 nbreaks <- length(breaks)
 rdbu_pal = RColorBrewer::brewer.pal(9, "RdBu")
+
+p2 <- myplotfun1(slope)
 p2 <- p2 +
   geom_sf(data = signif_pts, size = 0.01, shape = 20) +
   scale_fill_stepsn(
@@ -649,47 +529,45 @@ p2 <- p2 +
     )
   )
 
-## FIXME comment out once working in extract-time-series.R
-## 2c/d/e
-## output_map_list = list()
-output_list = list()
-pb = txtProgressBar(min = 0, max = length(years), initial = 0)
-for (i in 1:(length(years)-1)) {
-  year = years[i]
-  ## TODO precipitation output
-  recharge_fn = file.path(
-    'results/JULES_vn6.1_irrig',
-    sprintf("recharge_historical_%d_irrig.tif", year)
-  )
-  recharge_map = raster(recharge_fn)
-  abstraction_fn = file.path(
-    'results/JULES_vn6.1_irrig',
-    sprintf("abstraction_historical_%d_irrig.tif", year)
-  )
-  abstraction_map = raster(abstraction_fn)
-  dS_map = recharge_map - abstraction_map
-  dS_map = resample(dS_map, india_cmd_area)
-  ## output_map_list[[length(output_map_list) + 1]] = dS_map
-  for (j in 1:length(basins)) {
-    basin = basins[j]
-    recharge_sum = compute_basin_total(recharge_fn, basin_regions[[basin]])
-    abstraction_sum = compute_basin_total(abstraction_fn, basin_regions[[basin]])
-    dS = recharge_sum - abstraction_sum
-    output_list[[length(output_list) + 1]] = data.frame(
-      year=year,
-      basin = basin,
-      volume=dS
-    )
-  }
-  setTxtProgressBar(pb, i)
-}
-close(pb)
-
-output = do.call("rbind", output_list) %>% as_tibble()
-xx = output %>% arrange(year)
-
-xx_igp = xx %>% filter(basin %in% "igp")
-p3 <- myplotfun2(xx_igp)
+# ## FIXME comment out once working in extract-time-series.R
+# ## 2c/d/e
+# ## output_map_list = list()
+# output_list <- list()
+# pb <- txtProgressBar(min = 0, max = length(years), initial = 0)
+# for (i in 1:(length(years)-1)) {
+#   year <- years[i]
+#   ## TODO precipitation output
+#   recharge_fn <- file.path(
+#     'results/JULES_vn6.1_irrig',
+#     sprintf("recharge_historical_%d_irrig.tif", year)
+#   )
+#   recharge_map <- raster(recharge_fn)
+#   abstraction_fn <- file.path(
+#     'results/JULES_vn6.1_irrig',
+#     sprintf("abstraction_historical_%d_irrig.tif", year)
+#   )
+#   abstraction_map <- raster(abstraction_fn)
+#   dS_map <- recharge_map - abstraction_map
+#   dS_map <- resample(dS_map, india_cmd_area)
+#   for (j in 1:length(basins)) {
+#     basin <- basins[j]
+#     recharge_sum <- compute_basin_total(recharge_fn, basin_regions[[basin]])
+#     abstraction_sum <- compute_basin_total(abstraction_fn, basin_regions[[basin]])
+#     dS <- recharge_sum - abstraction_sum
+#     output_list[[length(output_list) + 1]] = data.frame(
+#       year = year,
+#       basin = basin,
+#       volume = dS
+#     )
+#   }
+#   setTxtProgressBar(pb, i)
+# }
+# close(pb)
+#
+# output <- do.call("rbind", output_list) %>% as_tibble()
+# xx <- output %>% arrange(year)
+igp_historical_water_balance_ts <- historical_water_balance_ts %>% filter(basin %in% "igp")
+p3 <- myplotfun2(igp_historical_water_balance_ts)
 p3 <-
   p3 +
   scale_y_continuous(
@@ -697,8 +575,8 @@ p3 <-
     limits = c(-0.3, 0.3)
   )
 
-xx_igp_west = xx %>% filter(basin %in% "igp_east")
-p4 <- myplotfun2(xx_igp_west)
+igp_west_historical_water_balance_ts <- historical_water_balance_ts %>% filter(basin %in% "igp_east")
+p4 <- myplotfun2(igp_west_historical_water_balance_ts)
 p4 <-
   p4 +
   scale_y_continuous(
@@ -706,8 +584,8 @@ p4 <-
     limits = c(-0.3, 0.3)
   )
 
-xx_igp_east = xx %>% filter(basin %in% "igp_west")
-p5 <- myplotfun2(xx_igp_east)
+igp_east_historical_water_balance_ts <- historical_water_balance_ts %>% filter(basin %in% "igp_west")
+p5 <- myplotfun2(igp_east_historical_water_balance_ts)
 p5 <-
   p5 +
   scale_y_continuous(
@@ -729,23 +607,23 @@ p12 <-
 
 p45 <- p4 + p5 + plot_layout(nrow = 2)
 
-p12$patches$plots[[1]] =
+p12$patches$plots[[1]] <-
   p12$patches$plots[[1]] +
   labs(tag = "a") +
   theme(plot.tag.position = c(0.14, 1.035),
         plot.tag = element_text(size = tag_label_size, face="bold"))
-p12 = p12 +
+p12 <- p12 +
   labs(tag = "b") +
   theme(plot.tag.position = c(0.14, 1),
         plot.tag = element_text(vjust = -0.7, size = tag_label_size, face="bold"))
 
-p45$patches$plots[[1]] =
+p45$patches$plots[[1]] <-
   p45$patches$plots[[1]] +
   labs(tag = "d") +
   theme(plot.tag.position = c(0.14, 1.06),
         plot.tag = element_text(size = tag_label_size, face="bold"))
 
-p45 = p45 +
+p45 <- p45 +
   labs(tag = "e") +
   theme(plot.tag.position = c(0.14, 1.02),
         plot.tag = element_text(vjust = -0.7, size = tag_label_size, face="bold"))
@@ -768,6 +646,7 @@ p345$patches$plots[[1]] =
 fig3 <- plot_grid(p12, p345, nrow=2, align = "v")
 ggsave("results/fig/figure3.png", width = 6, height = 5, units = "in")
 
+
 ## ####################################################### ##
 ## ####################################################### ##
 ##
@@ -781,25 +660,27 @@ ggsave("results/fig/figure3.png", width = 6, height = 5, units = "in")
 ## Use results from "JULES_vn6.1_irrig_current" to compare
 ## policies "current_canal" AND "restored_canal"
 
-current_canal_area = raster(
-  file.path(
-    "results/irrigated_area_maps",
-    "icrisat_kharif_canal_2010_india_0.500000Deg_current_canal.tif"
-  )
+# current_canal_area <- raster(
+#   file.path(
+#     "results/irrigated_area_maps",
+#     "icrisat_kharif_canal_2010_india_0.500000Deg_current_canal.tif"
+#   )
+# )
+# current_canal_area <- resample(current_canal_area, india, method = "ngb")
+# current_canal_area <- current_canal_area * india_cmd_area
+#
+# restored_canal_area <- raster(
+#   file.path(
+#     "results/irrigated_area_maps",
+#     "icrisat_kharif_canal_2010_india_0.500000Deg_restored_canal.tif"
+#   )
+# )
+# restored_canal_area <- resample(restored_canal_area, india, method = "ngb")
+# restored_canal_area <- restored_canal_area * india_cmd_area
+max_canal_area <- max(
+  cellStats(current_canal_area, max), 
+  cellStats(restored_canal_area, max)
 )
-current_canal_area = resample(current_canal_area, india, method = "ngb")
-current_canal_area = current_canal_area * india_cmd_area
-
-restored_canal_area = raster(
-  file.path(
-    "results/irrigated_area_maps",
-    "icrisat_kharif_canal_2010_india_0.500000Deg_restored_canal.tif"
-  )
-)
-restored_canal_area = resample(restored_canal_area, india, method = "ngb")
-restored_canal_area = restored_canal_area * india_cmd_area
-
-max_canal_area <- max(cellStats(current_canal_area, max), cellStats(restored_canal_area, max))
 
 p1 <- myplotfun1(current_canal_area)
 labelfun <- function(x) { ifelse((x %% 0.1) == 0, x, "") }
@@ -870,94 +751,116 @@ p2 <- p2 +
 ## current_canal_analysis_dir = "../data/analysis_old/current_canal"
 ## restored_canal_analysis_dir = "../data/analysis_old/restored_canal"
 
-output_list = list()
-current_output_map_list = list()
-restored_output_map_list = list()
-pb = txtProgressBar(min = 0, max = length(years) - 1, initial = 0)
-for (i in 1:(length(years)-1)) {
-  year = years[i]
-  ## Change in storage under current canal area
-  current_abstraction_fn = file.path(
-    "results/JULES_vn6.1_irrig_current",
-    sprintf("abstraction_current_canal_%s_current.tif", year)
-  )
+# output_list = list()
+# current_output_map_list = list()
+# restored_output_map_list = list()
+# pb = txtProgressBar(min = 0, max = length(years) - 1, initial = 0)
+# for (i in 1:(length(years)-1)) {
+#   year = years[i]
+#   ## Change in storage under current canal area
+#   current_abstraction_fn = file.path(
+#     "results/JULES_vn6.1_irrig_current",
+#     sprintf("abstraction_current_canal_%s_current.tif", year)
+#   )
+#
+#   current_recharge_fn = file.path(
+#     "results/JULES_vn6.1_irrig_current",
+#     sprintf("recharge_current_canal_%s_current.tif", year)
+#   )
+#   current_abstraction_map = raster(current_abstraction_fn)
+#   current_recharge_map = raster(current_recharge_fn)
+#   dS_current_map = current_recharge_map - current_abstraction_map
+#   dS_current_map = resample(dS_current_map, india_cmd_area)
+#   dS_current_map = dS_current_map * india_cmd_area
+#
+#   ## Change in storage under restored canal area
+#   restored_abstraction_fn = file.path(
+#     "results/JULES_vn6.1_irrig_current",
+#     sprintf("abstraction_restored_canal_%s_current.tif", year)
+#   )
+#   restored_recharge_fn = file.path(
+#     "results/JULES_vn6.1_irrig_current",
+#     sprintf("recharge_restored_canal_%s_current.tif", year)
+#   )
+#   restored_abstraction_map = raster(restored_abstraction_fn)
+#   restored_recharge_map = raster(restored_recharge_fn)
+#   dS_restored_map = restored_recharge_map - restored_abstraction_map
+#   dS_restored_map = resample(dS_restored_map, india_cmd_area)
+#   dS_restored_map = dS_restored_map * india_cmd_area
+#
+#   current_output_map_list[[length(current_output_map_list) + 1]] = dS_current_map
+#   restored_output_map_list[[length(restored_output_map_list) + 1]] = dS_restored_map
+#
+#   for (m in 1:length(basins)) {
+#     basin = basins[m]
+#     current_abstraction_sum = compute_basin_total(current_abstraction_fn, basin_regions[[basin]])
+#     current_recharge_sum = compute_basin_total(current_recharge_fn, basin_regions[[basin]])
+#     dS_current = current_recharge_sum - current_abstraction_sum
+#     restored_recharge_sum = compute_basin_total(restored_recharge_fn, basin_regions[[basin]])
+#     restored_abstraction_sum = compute_basin_total(restored_abstraction_fn, basin_regions[[basin]])
+#     dS_restored = restored_recharge_sum - restored_abstraction_sum
+#     ## Add to data frame
+#     output_list[[length(output_list) + 1]] = data.frame(
+#       year = year,
+#       basin = basin,
+#       policy = c("current", "restored"),
+#       dS = c(dS_current, dS_restored),
+#       abstraction = c(current_abstraction_sum, restored_abstraction_sum),
+#       recharge = c(current_recharge_sum, restored_recharge_sum)
+#     )
+#   }
+#   setTxtProgressBar(pb, i)
+# }
+# close(pb)
 
-  current_recharge_fn = file.path(
-    "results/JULES_vn6.1_irrig_current",
-    sprintf("recharge_current_canal_%s_current.tif", year)
-  )
-  current_abstraction_map = raster(current_abstraction_fn)
-  current_recharge_map = raster(current_recharge_fn)
-  dS_current_map = current_recharge_map - current_abstraction_map
-  dS_current_map = resample(dS_current_map, india_cmd_area)
-  dS_current_map = dS_current_map * india_cmd_area
-
-  ## Change in storage under restored canal area
-  restored_abstraction_fn = file.path(
-    "results/JULES_vn6.1_irrig_current",
-    sprintf("abstraction_restored_canal_%s_current.tif", year)
-  )
-  restored_recharge_fn = file.path(
-    "results/JULES_vn6.1_irrig_current",
-    sprintf("recharge_restored_canal_%s_current.tif", year)
-  )
-  restored_abstraction_map = raster(restored_abstraction_fn)
-  restored_recharge_map = raster(restored_recharge_fn)
-  dS_restored_map = restored_recharge_map - restored_abstraction_map
-  dS_restored_map = resample(dS_restored_map, india_cmd_area)
-  dS_restored_map = dS_restored_map * india_cmd_area
-
-  current_output_map_list[[length(current_output_map_list) + 1]] = dS_current_map
-  restored_output_map_list[[length(restored_output_map_list) + 1]] = dS_restored_map
-
-  for (m in 1:length(basins)) {
-    basin = basins[m]
-    current_abstraction_sum = compute_basin_total(current_abstraction_fn, basin_regions[[basin]])
-    current_recharge_sum = compute_basin_total(current_recharge_fn, basin_regions[[basin]])
-    dS_current = current_recharge_sum - current_abstraction_sum
-    restored_recharge_sum = compute_basin_total(restored_recharge_fn, basin_regions[[basin]])
-    restored_abstraction_sum = compute_basin_total(restored_abstraction_fn, basin_regions[[basin]])
-    dS_restored = restored_recharge_sum - restored_abstraction_sum
-    ## Add to data frame
-    output_list[[length(output_list) + 1]] = data.frame(
-      year = year,
-      basin = basin,
-      policy = c("current", "restored"),
-      dS = c(dS_current, dS_restored),
-      abstraction = c(current_abstraction_sum, restored_abstraction_sum),
-      recharge = c(current_recharge_sum, restored_recharge_sum)
-    )
-  }
-  setTxtProgressBar(pb, i)
-}
-close(pb)
-
-output <-
-  do.call("rbind", output_list) %>%
-  as_tibble() %>%
-  mutate(volume = recharge - abstraction)
-
+# output <-
+#   do.call("rbind", output_list) %>%
+#   as_tibble() %>%
+#   mutate(volume = recharge - abstraction)
+#
 precip_mean <- stackApply(precip_maps, rep(1, nlayers(precip_maps)), mean)
 aridity_mean <- stackApply(aridity_maps, rep(1, nlayers(precip_maps)), mean)
-
-dS_current_mean <-
-  raster::stack(current_output_map_list) %>%
-  stackApply(rep(1, length(current_output_map_list)), mean)
-
-dS_restored_mean <-
-  raster::stack(restored_output_map_list) %>%
-  stackApply(rep(1, length(restored_output_map_list)), mean)
-
-## irrigated area [same for restored/current]
-irr_area_fs <- list.files(
-  "results/irrigated_area_maps",
-  pattern = "icrisat_kharif_(.*)_2010_india_0.500000Deg_current_canal.tif",
-  full.names = TRUE
-)
-irr_area <- stack(irr_area_fs) %>% stackApply(rep(1, 5), sum)
-irr_area <- resample(irr_area, india_cmd_area)
-irr_area <- irr_area * india_cmd_area
-
+#
+# dS_current_mean <-
+#   raster::stack(current_output_map_list) %>%
+#   stackApply(rep(1, length(current_output_map_list)), mean)
+#
+# dS_restored_mean <-
+#   raster::stack(restored_output_map_list) %>%
+#   stackApply(rep(1, length(restored_output_map_list)), mean)
+#
+# ## irrigated area [same for restored/current]
+# irr_area_fs <- list.files(
+#   "results/irrigated_area_maps",
+#   pattern = "icrisat_kharif_(.*)_2010_india_0.500000Deg_current_canal.tif",
+#   full.names = TRUE
+# )
+# irr_area <- stack(irr_area_fs) %>% stackApply(rep(1, 5), sum)
+# irr_area <- resample(irr_area, india_cmd_area)
+# irr_area <- irr_area * india_cmd_area
+# dS_current_mean <-
+#   raster::stack(current_output_map_list) %>%
+#   stackApply(rep(1, length(current_output_map_list)), mean)
+#
+# dS_restored_mean <-
+#   raster::stack(restored_output_map_list) %>%
+#   stackApply(rep(1, length(restored_output_map_list)), mean)
+#
+# writeRaster(dS_current_mean, "results/dS_current_canal_ts.tif", overwrite = TRUE)
+# writeRaster(dS_restored_mean, "results/dS_restored_canal_ts.tif", overwrite = TRUE)
+#
+# # Irrigated area in current and restored scenarios (same for both)
+# # NB the wildcard in the file pattern is irrigation source
+# irr_area_fs <- list.files(
+#   "results/irrigated_area_maps",
+#   pattern = "icrisat_kharif_(.*)_2010_india_0.500000Deg_current_canal.tif",
+#   full.names = TRUE
+# )
+# irr_area <- stack(irr_area_fs) %>% stackApply(rep(1, 5), sum)
+# irr_area <- resample(irr_area, india_cmd_area)
+# irr_area <- irr_area * india_cmd_area
+# writeRaster(irr_area, "results/current_irrigated_area.tif", overwrite = TRUE)
+#
 df <- stack(list(aridity = aridity_mean,
                  precip = precip_mean,
                  dS_current = dS_current_mean,
@@ -995,7 +898,7 @@ p3 <- p3 +
   )
 
 ## xx = output %>% pivot_longer(all_of(c("dS", "abstraction", "recharge"))) %>% arrange(year)
-xx <- output %>% arrange(year)
+xx <- scenario_water_balance_ts %>% arrange(year)
 
 xx_igp <- xx %>% filter(basin %in% "igp")
 p4 <- myplotfun3(xx_igp)
@@ -1042,7 +945,7 @@ p56$patches$plots[[1]] =
   theme(plot.tag.position = c(0.14, 1.06),
         plot.tag = element_text(size = tag_label_size, face="bold"))
 
-p56 = p56 +
+p56 <- p56 +
   labs(tag = "g") +
   theme(plot.tag.position = c(0.14, 1.02),
         plot.tag = element_text(vjust = -0.7, size = tag_label_size, face="bold"))
@@ -1058,7 +961,7 @@ p456 <-
     legend.box.margin = margin(-10, 0, -5, 0)
   )
 
-p123 = p123 +
+p123 <- p123 +
   labs(tag = "c") +
   theme(plot.tag.position = c(0.14, 1.025),
         plot.tag = element_text(size = tag_label_size, face="bold"))
@@ -1071,6 +974,7 @@ p456$patches$plots[[1]] =
 
 fig4 <- plot_grid(p123, p456, nrow=2, align = "v", rel_heights = c(1, 0.75))
 ggsave("results/fig/figure4.png", width = 6, height = 7, units = "in")
+
 
 ## ## ####################################################### ##
 ## ## ####################################################### ##

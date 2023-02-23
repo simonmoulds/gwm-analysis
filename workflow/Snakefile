@@ -124,7 +124,10 @@ rule prepare_command_areas:
         script='workflow/scripts/prepare-command-areas.R',
         config=CONFIG
     output:
-        'results/command_areas.tif',
+        'results/india_command_area.tif',
+        'results/india_command_area_west.tif',
+        'results/india_command_area_east.tif',
+        # 'results/command_areas.tif',
         'results/command_inlets_0.083333Deg.gpkg',
         'results/command_inlets_0.100000Deg.gpkg'
     params:
@@ -173,8 +176,24 @@ rule extract_historical_time_series:
         expand('results/compute_water_balance_{stem}.txt', stem=STEMS),
         script='workflow/scripts/extract-time-series.R'
     output:
-        'results/historical_irrigation_demand_ts.rds',
-        'results/historical_water_balance_ts.rds'
+        'results/plotting/historical_sw_kharif_ts.tif',
+        'results/plotting/historical_gw_kharif_ts.tif',
+        'results/plotting/historical_sw_rabi_ts.tif',
+        'results/plotting/historical_gw_rabi_ts.tif',
+        'results/plotting/historical_precip_ts.tif',
+        'results/plotting/historical_pet_ts.tif',
+        'results/plotting/historical_aridity_ts.tif',
+        'results/plotting/current_irrigated_area.tif',
+        'results/plotting/current_canal_area.tif',
+        'results/plotting/restored_canal_area.tif',
+        'results/plotting/current_gw_area.tif',
+        'results/plotting/historical_water_balance_ts.tif',
+        'results/plotting/dS_historical_mean.tif',
+        'results/plotting/dS_current_canal_ts.tif',
+        'results/plotting/dS_restored_canal_ts.tif',
+        'results/plotting/historical_irrigation_demand_ts.rds',
+        'results/plotting/historical_water_balance_ts.rds',
+        'results/plotting/scenario_water_balance_ts.rds'
     params:
         outputdir='results'
     conda:
@@ -194,8 +213,24 @@ rule extract_historical_time_series:
 
 rule make_plots:
     input:
-        'results/historical_irrigation_demand_ts.rds',
-        'results/historical_water_balance_ts.rds',
+        'results/plotting/historical_sw_kharif_ts.tif',
+        'results/plotting/historical_gw_kharif_ts.tif',
+        'results/plotting/historical_sw_rabi_ts.tif',
+        'results/plotting/historical_gw_rabi_ts.tif',
+        'results/plotting/historical_precip_ts.tif',
+        'results/plotting/historical_pet_ts.tif',
+        'results/plotting/historical_aridity_ts.tif',
+        'results/plotting/current_irrigated_area.tif',
+        'results/plotting/current_canal_area.tif',
+        'results/plotting/restored_canal_area.tif',
+        'results/plotting/current_gw_area.tif',
+        'results/plotting/historical_water_balance_ts.tif',
+        'results/plotting/dS_historical_mean.tif',
+        'results/plotting/dS_current_canal_ts.tif',
+        'results/plotting/dS_restored_canal_ts.tif',
+        'results/plotting/historical_irrigation_demand_ts.rds',
+        'results/plotting/historical_water_balance_ts.rds',
+        'results/plotting/scenario_water_balance_ts.rds',
         script='workflow/scripts/make-plots.R'
     output:
         'results/fig/figure2.png',

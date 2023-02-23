@@ -19,6 +19,19 @@ library(patchwork)
 # india[india_cmd_area == 0] = 1
 
 
+compute_basin_total <- function(fn, basin) {
+  r = raster(fn)
+  r = resample(r, ganges_basin, method="ngb")
+  r = r / 1000 # m -> km
+  basin_area = basin * grid_cell_area
+  r = r * basin_area
+  basin_sum = sum(getValues(r), na.rm=TRUE) # km3
+  basin_area = sum(getValues(basin_area), na.rm=TRUE)
+  basin_avg = (basin_sum / (basin_area)) * 1000
+  basin_avg
+}
+
+
 gplot_data <- function(x, maxpixels = 50000)  {
   ## https://stackoverflow.com/a/47190738
   x <- raster::sampleRegular(x, maxpixels, asRaster = TRUE)
