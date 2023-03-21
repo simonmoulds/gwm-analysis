@@ -208,25 +208,14 @@ myplotfun4 <- function(x, ...) {
 library(ggnewscale)
 myplotfun5 <- function(x, ...) {
   ## p = ggplot(x, aes(x=dS_current, y=precip, size=irr_area, color=x)) +
-  blues_pal = colorRampPalette(brewer.pal(9, "Blues"))
-  reds_pal = colorRampPalette(brewer.pal(9, "Reds"))
-  p = ggplot(data = x, aes(x=dS_current, y=aridity, size=irr_area)) +
-    geom_point(
-      shape = 1,
-      color = "grey60"
-    ) +
-    geom_point(
-      data = x,
-      aes(
-        x=dS_restored,
-        y=aridity,
-        size=irr_area#,
-        ## color=x
-      ),
-      color = "grey10",
-      shape = 1,
-      stroke = 0.1
-    ) +
+  ## blues_pal = colorRampPalette(brewer.pal(9, "Blues"))
+  x <- x %>%
+    pivot_longer(
+      -all_of(c("x", "y", "aridity", "precip", "irr_area")),
+      names_to="scenario", values_to="storage")
+  # reds_pal = colorRampPalette(brewer.pal(9, "Reds"))
+  p <- ggplot(data = x, aes(x=storage, y=aridity, size=irr_area, colour=scenario)) +
+    geom_point(shape = 1, alpha = 0.4) +
     xlim(c(-0.5, 0.5)) +
     theme_bw() +
     theme(panel.grid = element_blank(),

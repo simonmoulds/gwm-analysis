@@ -4,200 +4,222 @@
 library(tidyverse)
 library(sf)
 library(ncdf4)
-library(ncdf4.helpers)
+## library(ncdf4.helpers)
 library(raster)
 library(terra)
 library(exactextractr)
 library(magrittr)
 library(zoo)
 
-
-## ################################################################# ##
-## ################################################################# ##
-##
-## 1 - Water balance
-##
-## ################################################################# ##
-## ################################################################# ##
-
 suite <- "u-ci496"
-irrig_id_stem <- "JULES_vn6.1_irrig"
-noirrig_id_stem <- "JULES_vn6.1_noirrig"
-profile_name <- c("daily_hydrology")
-start_year <- 1980
-end_year <- 2010
-years <- seq(start_year, end_year)
-npoints <- 861  # This is the number of points modelled by JULES
 
-wb_vars <- c(
-  "rainfall", "precip", "surf_roff", "sub_surf_roff", "elake",
-  "esoil_gb", "ecan_gb", "irrig_water", "fqw_gb", "runoff", 
-  "fao_et0", "snowfall"
-)
-
-wb_output <-
-  lapply(wb_vars, FUN = function(x) rep(0, npoints)) %>%
-  setNames(wb_vars)
-
-for (i in 1:length(years)) {
-  year <- years[i]
-  for (j in 1:length(profile_name)) {
-    fn <- paste0(irrig_id_stem, ".jules_", year, ".daily_hydrology.", year, ".nc")
-    nc <- nc_open(file.path("~/JULES_output", suite, fn))
-    for (var in wb_vars) {
-      if (var %in% nc.get.variable.list(nc)) {
-        arr <- ncvar_get(nc, var) * 60 * 60 * 24 # kg m-2 s-1 -> mm/d
-        arr <- apply(arr, 1, sum)
-        wb_output[[var]] = wb_output[[var]] + arr
-      }
-    }
-    nc_close(nc)
-  }
-}
-
-## NB elake is implicitly included in runoff
-precip <- wb_output[["precip"]]
-irr <- wb_output[["irrig_water"]]
-et <- wb_output[["esoil_gb"]] + wb_output[["ecan_gb"]]
-runoff <- wb_output[["surf_roff"]] + wb_output[["sub_surf_roff"]]
-wb <- precip + irr - et - runoff
-wb_err <- (wb / (precip + irr)) * 100
-
-snow_ix <- wb_output[["snowfall"]] > 1
-# There is relatively high error in snowy 
-# grid cells due to snow accumulation (?)
-mean_wb_err_snow <- mean(wb_err[snow_ix])
-mean_wb_err_nosnow <- mean(wb_err[!snow_ix]) # relatively low error
-mean_wb_err <- mean(wb_err)
-
-
-## ################################################################# ##
-## ################################################################# ##
-##
-## 2 - Comparison with GLEAM
-##
-## ################################################################# ##
-## ################################################################# ##
-
-get_jules_et_data <- function(id_stem, year, month) { #, month) {
+get_jules_data <- function(id_stem, year, month, varnames) {
   ## In these files, variables have units of m month-1
   fn <- paste0(id_stem, ".jules_", year, ".daily_hydrology.", year, ".2D.month.nc")
-  ## JULES ET components: esoil_gb, ecan_gb, elake
-  r <- terra::rast(file.path("results/JULES_output", fn)) #, subds = "esoil")
-  esoil <- r["esoil_gb"][[month]] # TODO find units (mean rate?)
-  ecan <- r["ecan_gb"][[month]]
-  elake <- r["elake"][[month]]
-  et <- esoil + ecan + elake
+  r <- terra::rast(file.path("results/JULES_output", fn))
+  maps <- list()
+  for (i in 1:length(varnames)) {
+    varname <- varnames[i]
+    maps[[i]] <- r[varname][[month]]
+  }
+  st <- terra::rast(maps)
+  sm <- app(st, sum, na.rm = TRUE)
   return(et)
 }
 
-dir.create("results/validation/gleam_comparison", recursive = TRUE)
+## ################################################################# ##
+## ################################################################# ##
+##
+## Preamble
+##
+## ################################################################# ##
+## ################################################################# ##
 
+## Define the various JULES simulations (scenarios)
+irrig_id_stem <- "JULES_vn6.1_irrig"
+irrig_current_id_stem <- "JULES_vn6.1_irrig_current"
+noirrig_id_stem <- "JULES_vn6.1_noirrig"
+stems <- list(
+  irrig = irrig_id_stem,
+  irrig_current = irrig_current_id_stem,
+  no_irrig = noirrig_id_stem
+)
+profile_name <- c("daily_hydrology")
+start_year <- 1980
+end_year <- 2010
+jules_years <- seq(start_year, end_year)
+npoints <- 861  # This is the number of points modelled by JULES
+
+## Auxillary maps
 india_cmd_area <- terra::rast("results/india_command_area.tif")
 # india_cmd_area_west <- terra::rast("results/india_command_area_west.tif")
 # india_cmd_area_east <- terra::rast("results/india_command_area_east.tif")
 study_rgn_ext <- terra::ext(india_cmd_area)
 cmd_areas <- st_read("resources/irrigation/command_areas.shp")
 
-gleam_datadir <- "/var/data/scratch/data/GLEAM/data/v3.5b/monthly/"
-gleam_components <- c("E", "Eb", "Ei", "Ep", "Es", "Et", "Ew")
 
-## Get time from one of the GLEAM files
-fn <- paste0("E_2003-2020_GLEAM_v3.5b_MO.nc")
-gleam <- terra::rast(file.path(gleam_datadir, fn))
-time_decoded <- terra::time(gleam)
-time_yearmon <- as.yearmon(time_decoded)
+## ## ################################################################# ##
+## ## ################################################################# ##
+## ##
+## ## 1 - Water balance
+## ##
+## ## ################################################################# ##
+## ## ################################################################# ##
 
-## Get the times for which JULES also has data
-start_year <- 1979
-end_year <- 2010
-time_years <- time_yearmon %>% format("%Y")
-jules_time_yearmon <- time_yearmon[time_years %in% seq(start_year, end_year)]
+## wb_vars <- c(
+##   "rainfall", "precip", "surf_roff", "sub_surf_roff", "elake",
+##   "esoil_gb", "ecan_gb", "irrig_water", "fqw_gb", "runoff",
+##   "fao_et0", "snowfall"
+## )
 
-## Loop through each component
-pb <- txtProgressBar(min = 0, max = length(time_yearmon) - 1, initial = 0)
-for (j in 1:length(time_yearmon)) {
-  year <- time_yearmon[j] %>% format("%Y") %>% as.integer
-  month <- time_yearmon[j] %>% format("%m") %>% as.integer
-  lst <- vector(mode = "list", length = length(gleam_components))
-  names(lst) <- gleam_components
-  for (i in 1:length(gleam_components)) {
-    component <- gleam_components[i]
-    fn <- paste0(component, "_", "2003-2020_GLEAM_v3.5b_MO.nc")
-    ## Note that opening netcdf with terra::rast(...) doesn't work on 
-    ## these files (latitude read as longitude and vice versa)
-    gleam <- nc_open(file.path(gleam_datadir, fn))
-    et <- ncvar_get(gleam, component, start = c(1,1,j), count = c(720, 1440, 1))
-    r <- terra::rast(et)
-    ext(r) <- ext(-180, 180, -90, 90)
-    crs(r) <- "epsg:4326"
-    # GLEAM data have units of mm/month [convert to m/month?]
-    r <- r / 1000
-    r <- r %>%
-      terra::crop(study_rgn_ext) %>%
-      aggregate(fact = 2, FUN = mean)
-    lst[[i]] <- r
-    nc_close(gleam)
-  }
-  st <- terra::rast(lst)
-  area_tot_list <- exact_extract(
-    st, cmd_areas, coverage_area = TRUE, progress = FALSE
-  )
-  for (i in 1:length(area_tot_list)) {
-    area_tot <- area_tot_list[[i]]
-    area_tot <- colSums(area_tot) #%>% tibble() %>% mutate(ID=id)
-  }
+## wb_output <-
+##   lapply(wb_vars, FUN = function(x) rep(0, npoints)) %>%
+##   setNames(wb_vars)
 
-  ## Write E (= Eb + Ei + Es + Et + Ew)
-  writeRaster(
-    lst[["E"]],
-    file.path(
-      "results/validation/gleam_comparison",
-      paste0("gleam_et_", year, "_", month, ".tif")
-    ),
-    overwrite = TRUE
-  )
-  if (time_yearmon[j] %in% jules_time_yearmon) {
-    # TODO: find units [guess mm/month]
-    jules_irrig_et <- get_jules_et_data(irrig_id_stem, year, month) %>% crop(study_rgn_ext)
-    writeRaster(
-      jules_irrig_et,
-      file.path(
-        "results/validation/gleam_comparison",
-        paste0("jules_irrig_et_", year, "_", month, ".tif")
-      ),
-      overwrite = TRUE
-    )
+## for (i in 1:length(jules_years)) {
+##   year <- jules_years[i]
+##   for (j in 1:length(profile_name)) {
+##     fn <- paste0(irrig_id_stem, ".jules_", year, ".daily_hydrology.", year, ".nc")
+##     nc <- nc_open(file.path("~/JULES_output", suite, fn))
+##     for (var in wb_vars) {
+##       if (var %in% nc.get.variable.list(nc)) {
+##         arr <- ncvar_get(nc, var) * 60 * 60 * 24 # kg m-2 s-1 -> mm/d
+##         arr <- apply(arr, 1, sum)
+##         wb_output[[var]] = wb_output[[var]] + arr
+##       }
+##     }
+##     nc_close(nc)
+##   }
+## }
 
-    jules_noirrig_et <- get_jules_et_data(noirrig_id_stem, year, month) %>% crop(study_rgn_ext)
-    writeRaster(
-      jules_noirrig_et,
-      file.path(
-        "results/validation/gleam_comparison",
-        paste0("jules_noirrig_et_", year, "_", month, ".tif")
-      ),
-      overwrite = TRUE
-    )
-  }
-  setTxtProgressBar(pb, j)
-}
-close(pb)
+## ## NB elake is implicitly included in runoff
+## precip <- wb_output[["precip"]]
+## irr <- wb_output[["irrig_water"]]
+## et <- wb_output[["esoil_gb"]] + wb_output[["ecan_gb"]]
+## runoff <- wb_output[["surf_roff"]] + wb_output[["sub_surf_roff"]]
+## wb <- precip + irr - et - runoff
+## wb_err <- (wb / (precip + irr)) * 100
 
-# TODO: find example plot comparing ET
-# TODO: make sure study period length is the same 
+## snow_ix <- wb_output[["snowfall"]] > 1
+## # There is relatively high error in snowy
+## # grid cells due to snow accumulation (?)
+## mean_wb_err_snow <- mean(wb_err[snow_ix])
+## mean_wb_err_nosnow <- mean(wb_err[!snow_ix]) # relatively low error
+## mean_wb_err <- mean(wb_err)
 
-# Plot multiyear biases 
-fs <- list.files("results/validation/gleam_comparison", pattern = "jules_irrig_et_[0-9]{4}_[0-9]+.tif", full.names = TRUE)
-st <- terra::rast(fs)
-jules_irrig_et_mean <- app(st, mean)
 
-fs <- list.files("results/validation/gleam_comparison", pattern = "jules_noirrig_et_[0-9]{4}_[0-9]+.tif", full.names = TRUE)
-st <- terra::rast(fs) 
-jules_noirrig_et_mean <- app(st, mean)
+## ## ################################################################# ##
+## ## ################################################################# ##
+## ##
+## ## 2 - Comparison with GLEAM
+## ##
+## ## ################################################################# ##
+## ## ################################################################# ##
 
-fs <- list.files("results/validation/gleam_comparison", pattern = "gleam_et_[0-9]{4}_[0-9]+.tif", full.names = TRUE)
-st <- terra::rast(fs)
-gleam_et_mean <- app(st, mean) 
+## ## Create output directory
+## dir.create("results/validation/gleam_comparison", recursive = TRUE)
+
+## gleam_datadir <- "/var/data/scratch/data/GLEAM/data/v3.5b/monthly/"
+## gleam_components <- c("E", "Eb", "Ei", "Ep", "Es", "Et", "Ew")
+
+## ## Get time from one of the GLEAM files
+## fn <- paste0("E_2003-2020_GLEAM_v3.5b_MO.nc")
+## gleam <- terra::rast(file.path(gleam_datadir, fn))
+## time_decoded <- terra::time(gleam)
+## time_yearmon <- as.yearmon(time_decoded)
+
+## ## Get the times for which JULES also has data
+## years <- time_yearmon %>% format("%Y")
+## jules_time_yearmon <- time_yearmon[years %in% jules_years]
+## jules_et_components <- c("esoil_gb", "ecan_gb", "elake")
+
+## ## Loop through each component
+## pb <- txtProgressBar(min = 0, max = length(time_yearmon) - 1, initial = 0)
+## for (j in 1:length(time_yearmon)) {
+##   year <- year(time_yearmon[i])
+##   month <- month(time_yearmon[i])
+##   lst <- vector(mode = "list", length = length(gleam_components))
+##   names(lst) <- gleam_components
+##   for (i in 1:length(gleam_components)) {
+##     component <- gleam_components[i]
+##     fn <- paste0(component, "_", "2003-2020_GLEAM_v3.5b_MO.nc")
+##     ## Note that opening netcdf with terra::rast(...) doesn't work on
+##     ## these files (latitude read as longitude and vice versa)
+##     gleam <- nc_open(file.path(gleam_datadir, fn))
+##     et <- ncvar_get(gleam, component, start = c(1,1,j), count = c(720, 1440, 1))
+##     r <- terra::rast(et)
+##     ext(r) <- ext(-180, 180, -90, 90)
+##     crs(r) <- "epsg:4326"
+##     # GLEAM data have units of mm/month [convert to m/month?]
+##     r <- r / 1000
+##     r <- r %>%
+##       terra::crop(study_rgn_ext) %>%
+##       aggregate(fact = 2, FUN = mean)
+##     lst[[i]] <- r
+##     nc_close(gleam)
+##   }
+##   st <- terra::rast(lst)
+##   area_tot_list <- exact_extract(
+##     st, cmd_areas, coverage_area = TRUE, progress = FALSE
+##   )
+##   for (i in 1:length(area_tot_list)) {
+##     area_tot <- area_tot_list[[i]]
+##     area_tot <- colSums(area_tot) #%>% tibble() %>% mutate(ID=id)
+##   }
+
+##   ## Write E (= Eb + Ei + Es + Et + Ew)
+##   writeRaster(
+##     lst[["E"]],
+##     file.path(
+##       "results/validation/gleam_comparison",
+##       paste0("gleam_et_", year, "_", month, ".tif")
+##     ),
+##     overwrite = TRUE
+##   )
+##   if (time_yearmon[j] %in% jules_time_yearmon) {
+##     jules_irrig_et <-
+##       get_jules_et_data(irrig_id_stem, year, month, jules_et_components) %>%
+##       crop(study_rgn_ext)
+##     writeRaster(
+##       jules_irrig_et,
+##       file.path(
+##         "results/validation/gleam_comparison",
+##         paste0("jules_irrig_et_", year, "_", month, ".tif")
+##       ),
+##       overwrite = TRUE
+##     )
+
+##     jules_noirrig_et <-
+##       get_jules_et_data(noirrig_id_stem, year, month, jules_et_components) %>%
+##       crop(study_rgn_ext)
+##     writeRaster(
+##       jules_noirrig_et,
+##       file.path(
+##         "results/validation/gleam_comparison",
+##         paste0("jules_noirrig_et_", year, "_", month, ".tif")
+##       ),
+##       overwrite = TRUE
+##     )
+##   }
+##   setTxtProgressBar(pb, j)
+## }
+## close(pb)
+
+## # TODO: find example plot comparing ET
+## # TODO: make sure study period length is the same
+
+## ## # Plot multiyear biases
+## ## fs <- list.files("results/validation/gleam_comparison", pattern = "jules_irrig_et_[0-9]{4}_[0-9]+.tif", full.names = TRUE)
+## ## st <- terra::rast(fs)
+## ## jules_irrig_et_mean <- app(st, mean)
+
+## ## fs <- list.files("results/validation/gleam_comparison", pattern = "jules_noirrig_et_[0-9]{4}_[0-9]+.tif", full.names = TRUE)
+## ## st <- terra::rast(fs)
+## ## jules_noirrig_et_mean <- app(st, mean)
+
+## ## fs <- list.files("results/validation/gleam_comparison", pattern = "gleam_et_[0-9]{4}_[0-9]+.tif", full.names = TRUE)
+## ## st <- terra::rast(fs)
+## ## gleam_et_mean <- app(st, mean)
 
 
 ## ################################################################# ##
@@ -213,38 +235,21 @@ gleam_et_mean <- app(st, mean)
 ## Compare irrigation demand with pirrww from ISIMIP2a experiments
 # (model)_watch-wfdei_nobc_hist_(nosoc|pressoc|varsoc)_co2_(variable)_global_daily_(YYYY-YYYY)_IGP.month.nc4
 
-get_jules_data <- function(id_stem, year, month, varnames) { #, month) {
-  ## In these files, variables have units of m month-1
-  fn <- paste0(id_stem, ".jules_", year, ".daily_hydrology.", year, ".2D.month.nc")
-  ## JULES ET components: esoil_gb, ecan_gb, elake
-  r <- terra::rast(file.path("results/JULES_output", fn)) #, subds = "esoil") 
-  maps <- list()
-  for (i in 1:length(varnames)) {
-    varname <- varnames[i]
-    maps[[i]] <- r[varname][[month]] 
-  }
-  st <- terra::rast(maps)
-  sm <- app(st, sum, na.rm = TRUE)
-  return(et)
-}
-
-isimip2jules <- list(qtot = "runoff", evap = c("esoil_gb", "ecan_gb", "elake"), qr = "sub_surf_roff", qs = "surf_roff")
-
-# isimip | jules 
-# ---------------
-# qtot   | runoff [=surf_roff + sub_surf_roff] 
-# evap   | esoil_gb + ecan_gb + elake 
-# qr     | sub_surf_roff 
-# qs     | surf_roff 
-# qsb    | ??
-
+## Create directory for output
 dir.create("results/validation/isimip_comparison", recursive = TRUE)
 
-# model <- "watergap2-2c"
-# model <- "vic"
+## Map JULES variable names to ISIMIP equivalent
+isimip2jules <- list(
+  qtot = "runoff",
+  evap = c("esoil_gb", "ecan_gb", "elake"),
+  qr = "sub_surf_roff",
+  qs = "surf_roff",
+  pirruse = "irrig_water",
+  airruse = "irrig_water"
+)
+
+## Which ISIMIP experiment?
 society <- "varsoc"
-variable <- "qtot"
-# period <- "2001_2010"
 
 # Calculate weights for averaging
 w <- terra::cellSize(india_cmd_area)
@@ -253,115 +258,145 @@ w <- w * india_cmd_area
 wsum <- global(w, mean, na.rm = TRUE)
 wsum <- as.numeric(wsum)
 
-models <- c("watergap2-2c", "vic", "pcr-globwb", "orchidee", "mpi-hm", "matsiro", "lpjml", "jules-w1", "h08", "dbh", "clm40")
-variables <- c("qtot")
-df_list <- list()
-for (i in 1:length(models)) { 
+models <- c(
+  "watergap2-2c", "vic", "pcr-globwb", "orchidee",
+  "mpi-hm", "matsiro", "lpjml", "jules-w1", "h08",
+  "dbh", "clm40"
+)
+variables <- c("qtot", "evap", "qr", "qs", "pirruse", "airruse")
+
+## Various periods are used - loop is written to
+## test all and skip if file doesn't exist
+periods <- c("1981_1990", "1991_2000", "2001_2010", "2011_2016", "1971_2010", "1901_2016")
+
+## df_list <- list()
+for (i in 1:length(models)) {
   model <- models[i]
-  for (j in 1:length(variables)) { 
+
+  for (j in 1:length(variables)) {
     variable <- variables[j]
     annual_maps <- list()
     jjas_maps <- list()
-    # `periods` seems to vary depending on society / variable
-    if (variable %in% "qtot") { 
-      periods <- c("1981_1990", "1991_2000", "2001_2010", "2011_2016")
-    }
 
-    for (k in 1:length(periods)) { 
+    for (k in 1:length(periods)) {
       period <- periods[k]
       fn <- sprintf(
         "%s_watch-wfdei_nobc_hist_%s_co2_%s_global_daily_%s_IGP.month.nc4", 
         model, society, variable, period
       )
+      if (!file.exists(fn)) {
+        next
+      }
       x <- terra::rast(file.path("resources/ISIMIP2a", fn))
       x <- resample(x, india_cmd_area, method = "near")
       x <- x * india_cmd_area
-      # Units are kg m-2 s-1 - we need to get average mm/day
+
+      ## Unit conversion (kg m-2 s-1 -> mm/day)
       tm <- time(x)
       num_days <- lubridate::days_in_month(tm) 
       x <- x * 24 * 60 * 60
       x <- x * num_days # Convert from mm/day to mm/month
+
+      ## Write output
       years <- lubridate::year(tm)
       months <- lubridate::month(tm)
-      
-      # First we calculate the annual average 
-      annual_mean <- tapp(x, "years", mean, cores = 12)
-      # annual_maps[[k]] <- annual_mean 
-
-      # Then we calculate the JJAS average (could add other seasons)
-      d <- tibble(year = years, month = months) %>% rowid_to_column("index") %>% filter(month %in% 6:9) %>% group_by(year) %>% mutate(ssn_index = cur_group_id())
-      x_jjas <- x[[d$index]]
-      jjas_mean <- tapp(x_jjas, d$ssn_index, mean, cores = 12)
-      names(jjas_mean) <- paste0("jjas_", unique(years))
-      # jjas_maps[[k]] <- jjas_mean
-      
-      for (ii in 1:length(years)) { 
-        yr <- years[ii] 
-        fn <- sprintf(
-          "%s_watch-wfdei_nobc_hist_%s_co2_%s_global_daily_%s_IGP.annual_mean.nc4", 
-          model, society, variable, yr
-        )
-        writeRaster(annual_mean[[ii]], fn, overwrite = TRUE)
-
-        fn <- sprintf(
-          "%s_watch-wfdei_nobc_hist_%s_co2_%s_global_daily_%s_IGP.jjas_mean.nc4", 
-          model, society, variable, yr
-        )
-        writeRaster(jjas_mean[[ii]], fn, overwrite = TRUE) 
-      }  
-  
-      # Last, calculate the global mean, weighted by cell area
-      mn <- global(x * w, mean, na.rm = TRUE)
-      mn <- mn %>% setNames("mn") %>% mutate(mn = mn / wsum)
-      mn <- mn %>% mutate(time = tm, variable = variable)
-      df_list[[length(df_list) + 1]] <- mn 
+      for (ii in 1:length(tm)) {
+        year <- years[ii]
+        month <- months[ii]
+        ## Skip if year does not correspond to a year in the JULES simulation
+        if (!year %in% jules_years) {
+          next
+        }
+        map <- x[[ii]]
+        fn <- paste0(model, "_", society, "_", variable, "_", year, "_", month, ".tif")
+        writeRaster(map, fn, overwrite = TRUE)
+      }
     }
   }
 }
 
-# Now write the JULES output
+## Monthly time series for whole JULES simulation period
+jules_time_yearmon <- seq(
+  ym(paste0(start_year, "01")),
+  ym(paste0(end_year, "12")), by = "1 month"
+)
+jules_time_yearmon <- as.yearmon(jules_time_yearmon)
+
+## Now write the JULES output
 for (i in 1:length(jules_time_yearmon)) {
-  year <- time_yearmon[j] %>% format("%Y") %>% as.integer
-  month <- time_yearmon[j] %>% format("%m") %>% as.integer
+  year <- year(jules_time_yearmon[i])
+  month <- month(jules_time_yearmon[i])
   for (j in 1:length(variables)) {
     variable <- variables[[j]]
     jules_vars <- isimip2jules[[variable]]
-    jules_irrig <- get_jules_data(irrig_id_stem, year, month, jules_vars) %>% crop(study_rgn_ext)
-    writeRaster(
-      jules_irrig,
-      file.path(
-        "results/validation/isimip_comparison",
-        paste0("jules_irrig_", variable, "_", year, "_", month, ".tif")
-      ),
-      overwrite = TRUE
-    )
-  
-    jules_noirrig <- get_jules_data(noirrig_id_stem, year, month, jules_vars) %>% crop(study_rgn_ext)
-    writeRaster(
-      jules_noirrig,
-      file.path(
-        "results/validation/isimip_comparison",
-        paste0("jules_noirrig_", variable, "_", year, "_", month, ".tif")
-      ),
-      overwrite = TRUE
-    )
+
+    for (k in 1:length(stems)) {
+      id_stem <- stems[[k]]
+      id_stem_label <- names(stems)[k]
+      jules_data <- get_jules_data(id_stem, year, month, jules_vars)
+      jules_data <- jules_data %>% crop(study_rgn_ext)
+      fn <- paste0("jules_", id_stem_label, "_", variable, "_", year, "_", month, ".tif")
+      writeRaster(
+        jules_data,
+        file.path("results/validation/isimip_comparison", fn),
+        overwrite = TRUE
+      )
+    }
   }
 }
 
-df <- do.call("rbind", datalist)
+
+## ## ################################################################# ##
+## ## ################################################################# ##
+## ##
+## ## Recharge
+## ##
+## ## ################################################################# ##
+## ## ################################################################# ##
+
+## ## Compare with recent recharge dataset (see papers by Wouter Berghuis)
+
+## ## Total recharge is sub_surf_roff
+## ## Recharge fraction is precip
+
+## for (i in 1:length(stems)) {
+##   id_stem <- stems[[i]]
+##   id_stem_label <- names(stems)[i]
+
+##   for (j in 1:length(jules_years)) {
+##     year <- year(jules_years[j])
+##     precip_maps <- list()
+##     recharge_maps <- list()
+
+##     ## We want annual totals, so sum up over Jan-Dec
+##     for (k in 1:12) {
+##       recharge_maps[[k]] <- get_jules_data(id_stem, year, k, "sub_surf_roff")
+##       precip_maps[[k]] <- get_jules_data(id_stem, year, k, "precip")
+##     }
+##     ## Add up to get units of mm / year
+##     jules_recharge <- app(terra::rast(recharge_maps), sum)
+##     jules_precip <- app(terra::rast(precip_maps), sum)
+##     jules_recharge_frac <- jules_recharge / jules_precip
+
+##     ## Write output
+##     fn <- paste0("jules_", id_stem_label, "_recharge_", year, "_", k, ".tif")
+##     writeRaster(
+##       jules_recharge,
+##       file.path("results/validation/recharge_comparison", fn),
+##       overwrite = TRUE
+##     )
+
+##     fn <- paste0("jules_", id_stem_label, "_recharge_frac_", year, "_", k, ".tif")
+##     writeRaster(
+##       jules_recharge_frac,
+##       file.path("results/validation/recharge_comparison", fn),
+##       overwrite = TRUE
+##     )
+##   }
+## }
 
 
-## ################################################################# ##
-## ################################################################# ##
-##
-## Recharge
-##
-## ################################################################# ##
-## ################################################################# ##
-
-# Compare with recent recharge dataset (see papers by Wouter Berghuis)
-
-
+## OLD:
 
 ## ## ################################################################# ##
 ## ## ################################################################# ##

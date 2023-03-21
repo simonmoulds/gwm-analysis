@@ -36,162 +36,163 @@ source(file.path(cwd, "utils.R"))
 ## if (!dir.exists(outputdir))
 ##   dir.create(outputdir, recursive = TRUE)
 
-# ## ####################################################### ##
-# ## ####################################################### ##
-# ##
-# ## Preamble [TODO - put in separate script]
-# ##
-# ## ####################################################### ##
-# ## ####################################################### ##
-#
-#
-# # Years in simulation
-# years <- 1979:2013
-#
-# # Growing seasons
-# seasons <- c("kharif", "rabi", "zaid", "continuous")
-#
-# # Irrigation sources
-# types <- c("gw", "sw", "total")
-#
-# # JULES landmask
-# ganges_basin <- raster("resources/land.nc", varname = "mask")
-# ganges_basin[ganges_basin == 0] <- NA
-#
-# # Canal command areas
-# india_cmd_area <- raster("results/india_command_area.tif")
-# india_cmd_area_west <- raster("results/india_command_area_west.tif")
-# india_cmd_area_east <- raster("results/india_command_area_east.tif") 
-# india_cmd_area_poly <- rasterToPolygons(
-#   india_cmd_area, dissolve = TRUE
-# ) %>% st_as_sf()
-# st_write(india_cmd_area_poly, "results/plotting/india_command_area.gpkg", delete_dsn = TRUE)
-#
-# # Create a list of basin regions which we can loop through
-# basin_regions <- list(
-#   igp = india_cmd_area,
-#   igp_east = india_cmd_area_east,
-#   igp_west = india_cmd_area_west
-# )
-# basins <- names(basin_regions)
-#
-# # Grid cell area is needed to convert depths to volumes
-# grid_cell_area <- raster::area(india_cmd_area) # km2
-#
-#
-# ## ####################################################### ##
-# ## ####################################################### ##
-# ##
-# ## Historical time series
-# ##
-# ## ####################################################### ##
-# ## ####################################################### ##
-#
-#
-# output_list <- list()
-# for (m in 1:length(basins)) {
-#   basin <- basins[m]
-#   pb <- txtProgressBar(min = 0, max = length(years), initial = 0)
-#   for (i in 1:length(years)) {
-#     year <- years[i]
-#     fn <- file.path(
-#       "results/JULES_vn6.1_irrig",
-#       paste0("annual_precip_historical_", year, "_irrig.tif")
-#     )
-#     precip_basin_sum <- compute_basin_total(fn, basin_regions[[basin]])
-#     et_basin_sum <- compute_basin_total(
-#       fn %>% gsub("precip", "et", .),
-#       basin_regions[[basin]]
-#     )
-#     surf_roff_basin_sum <- compute_basin_total(
-#       fn %>% gsub("precip", "surf_roff", .),
-#       basin_regions[[basin]]
-#     )
-#     sub_surf_roff_basin_sum <- compute_basin_total(
-#       fn %>% gsub("precip", "sub_surf_roff", .),
-#       basin_regions[[basin]]
-#     )
-#     for (j in 1:length(seasons)) {
-#       season <- seasons[j]
-#       for (k in 1:length(types)) {
-#         type <- types[k]
-#         fn <- file.path(
-#           "results/JULES_vn6.1_irrig",
-#           paste0(
-#             season, "_", type,
-#             "_irrigation_historical_",
-#             year, "_irrig.tif"
-#           )
-#         )
-#         irrigation_basin_sum <- compute_basin_total(
-#           fn, basin_regions[[basin]]
-#         )
-#         output_list[[length(output_list) + 1]] <- data.frame(
-#           year = year,
-#           season = season,
-#           types = type,
-#           basin = basin,
-#           irrigation = irrigation_basin_sum,
-#           precip = precip_basin_sum,
-#           et = et_basin_sum,
-#           surf_roff = surf_roff_basin_sum,
-#           sub_surf_roff = sub_surf_roff_basin_sum
-#         )
-#       }
-#     }
-#     setTxtProgressBar(pb, i)
-#   }
-#   close(pb)
-# }
-# historical_ts <- do.call("rbind", output_list) %>% as_tibble()
-# saveRDS(
-#   object = historical_ts,
-#   file = "results/plotting/historical_irrigation_demand_ts.rds"
-# )
-#
-#
-# # Historical water balance 
-# output_list <- list()
-# output_map_list <- list()
-# pb <- txtProgressBar(min = 0, max = length(years), initial = 0)
-# for (i in 1:(length(years)-1)) {
-#   year <- years[i]
-#   recharge_fn <- file.path(
-#     "results/JULES_vn6.1_irrig",
-#     sprintf("recharge_historical_%d_irrig.tif", year)
-#   )
-#   recharge_map <- raster(recharge_fn)
-#   abstraction_fn <- file.path(
-#     "results/JULES_vn6.1_irrig",
-#     sprintf("abstraction_historical_%d_irrig.tif", year)
-#   )
-#   abstraction_map <- raster(abstraction_fn)
-#   dS_map <- recharge_map - abstraction_map
-#   dS_map <- resample(dS_map, india_cmd_area)
-#   for (j in 1:length(basins)) {
-#     basin <- basins[j]
-#     recharge_sum <- compute_basin_total(recharge_fn, basin_regions[[basin]])
-#     abstraction_sum <- compute_basin_total(abstraction_fn, basin_regions[[basin]])
-#     dS <- recharge_sum - abstraction_sum
-#     output_list[[length(output_list) + 1]] <- data.frame(
-#       year = year,
-#       basin = basin,
-#       volume = dS
-#     )
-#   }
-#   dS_map <- dS_map * india_cmd_area
-#   output_map_list[[length(output_map_list) + 1]] <- dS_map
-#   setTxtProgressBar(pb, i)
-# }
-# close(pb)
-#
-# # Save water balance time series data
-# output <- do.call("rbind", output_list) %>% as_tibble()
-# xx <- output %>% arrange(year)
-# saveRDS(
-#   object = xx,
-#   file = "results/plotting/historical_water_balance_ts.rds"
-# )
+
+## ####################################################### ##
+## ####################################################### ##
+##
+## Preamble [TODO - put in separate script]
+##
+## ####################################################### ##
+## ####################################################### ##
+
+
+# Years in simulation
+years <- 1979:2013
+
+# Growing seasons
+seasons <- c("kharif", "rabi", "zaid", "continuous")
+
+# Irrigation sources
+types <- c("gw", "sw", "total")
+
+# JULES landmask
+ganges_basin <- raster("resources/land.nc", varname = "mask")
+ganges_basin[ganges_basin == 0] <- NA
+
+# Canal command areas
+india_cmd_area <- raster("results/india_command_area.tif")
+india_cmd_area_west <- raster("results/india_command_area_west.tif")
+india_cmd_area_east <- raster("results/india_command_area_east.tif")
+india_cmd_area_poly <- rasterToPolygons(
+  india_cmd_area, dissolve = TRUE
+) %>% st_as_sf()
+st_write(india_cmd_area_poly, "results/plotting/india_command_area.gpkg", delete_dsn = TRUE)
+
+# Create a list of basin regions which we can loop through
+basin_regions <- list(
+  igp = india_cmd_area,
+  igp_east = india_cmd_area_east,
+  igp_west = india_cmd_area_west
+)
+basins <- names(basin_regions)
+
+# Grid cell area is needed to convert depths to volumes
+grid_cell_area <- raster::area(india_cmd_area) # km2
+
+
+## ####################################################### ##
+## ####################################################### ##
+##
+## Historical time series
+##
+## ####################################################### ##
+## ####################################################### ##
+
+
+output_list <- list()
+for (m in 1:length(basins)) {
+  basin <- basins[m]
+  pb <- txtProgressBar(min = 0, max = length(years), initial = 0)
+  for (i in 1:length(years)) {
+    year <- years[i]
+    fn <- file.path(
+      "results/JULES_vn6.1_irrig",
+      paste0("annual_precip_historical_", year, "_irrig.tif")
+    )
+    precip_basin_sum <- compute_basin_total(fn, basin_regions[[basin]])
+    et_basin_sum <- compute_basin_total(
+      fn %>% gsub("precip", "et", .),
+      basin_regions[[basin]]
+    )
+    surf_roff_basin_sum <- compute_basin_total(
+      fn %>% gsub("precip", "surf_roff", .),
+      basin_regions[[basin]]
+    )
+    sub_surf_roff_basin_sum <- compute_basin_total(
+      fn %>% gsub("precip", "sub_surf_roff", .),
+      basin_regions[[basin]]
+    )
+    for (j in 1:length(seasons)) {
+      season <- seasons[j]
+      for (k in 1:length(types)) {
+        type <- types[k]
+        fn <- file.path(
+          "results/JULES_vn6.1_irrig",
+          paste0(
+            season, "_", type,
+            "_irrigation_historical_",
+            year, "_irrig.tif"
+          )
+        )
+        irrigation_basin_sum <- compute_basin_total(
+          fn, basin_regions[[basin]]
+        )
+        output_list[[length(output_list) + 1]] <- data.frame(
+          year = year,
+          season = season,
+          types = type,
+          basin = basin,
+          irrigation = irrigation_basin_sum,
+          precip = precip_basin_sum,
+          et = et_basin_sum,
+          surf_roff = surf_roff_basin_sum,
+          sub_surf_roff = sub_surf_roff_basin_sum
+        )
+      }
+    }
+    setTxtProgressBar(pb, i)
+  }
+  close(pb)
+}
+historical_ts <- do.call("rbind", output_list) %>% as_tibble()
+saveRDS(
+  object = historical_ts,
+  file = "results/plotting/historical_irrigation_demand_ts.rds"
+)
+
+
+# Historical water balance
+output_list <- list()
+output_map_list <- list()
+pb <- txtProgressBar(min = 0, max = length(years), initial = 0)
+for (i in 1:(length(years)-1)) {
+  year <- years[i]
+  recharge_fn <- file.path(
+    "results/JULES_vn6.1_irrig",
+    sprintf("recharge_historical_%d_irrig.tif", year)
+  )
+  recharge_map <- raster(recharge_fn)
+  abstraction_fn <- file.path(
+    "results/JULES_vn6.1_irrig",
+    sprintf("abstraction_historical_%d_irrig.tif", year)
+  )
+  abstraction_map <- raster(abstraction_fn)
+  dS_map <- recharge_map - abstraction_map
+  dS_map <- resample(dS_map, india_cmd_area)
+  for (j in 1:length(basins)) {
+    basin <- basins[j]
+    recharge_sum <- compute_basin_total(recharge_fn, basin_regions[[basin]])
+    abstraction_sum <- compute_basin_total(abstraction_fn, basin_regions[[basin]])
+    dS <- recharge_sum - abstraction_sum
+    output_list[[length(output_list) + 1]] <- data.frame(
+      year = year,
+      basin = basin,
+      volume = dS
+    )
+  }
+  dS_map <- dS_map * india_cmd_area
+  output_map_list[[length(output_map_list) + 1]] <- dS_map
+  setTxtProgressBar(pb, i)
+}
+close(pb)
+
+# Save water balance time series data
+output <- do.call("rbind", output_list) %>% as_tibble()
+xx <- output %>% arrange(year)
+saveRDS(
+  object = xx,
+  file = "results/plotting/historical_water_balance_ts.rds"
+)
 
 # Save water balance maps
 historical_water_balance_maps <- stack(output_map_list)
