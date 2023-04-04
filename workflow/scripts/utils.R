@@ -360,23 +360,19 @@ load_jules_output <- function(datadir,
 
 compute_restored_canal_area <- function(sf = 0.5) {
 
-  ## get_filename <- function(source) {
-  ##   fn <- sprintf("icrisat_kharif_%s_2010_india_0.500000Deg_current_canal.tif", source)
-  ##   ## return(file.path("resources/irrigated_area_maps", fn))
-  ##   return(file.path(datadir, fn))
-  ## }
-
   ## ##################################################### ##
   ## Step 1: Load irrigated areas under current policy
   ## ##################################################### ##
 
-  irrigation_sources <- c("canal", "other_sources", "other_wells", "tanks", "tubewells")
+  irrigation_sources <- c(
+    "canal", "other_sources", "other_wells", "tanks", "tubewells"
+  )
   irrigation_source_maps <- list()
+  file_ptn <- "icrisat_kharif_%s_2010_india_0.500000Deg_current_canal.tif"
   for (i in 1:length(irrigation_sources)) {
     source <- irrigation_sources[i]
     fn <- file.path(
-      "results/irrigated_area_maps",
-      paste0("icrisat_kharif_", source, "_2010_india_0.500000Deg_current_canal.tif")
+      "results/irrigated_area_maps", sprintf(file_ptn, source)
     )
     irrigation_source_maps[[source]] <- raster(fn)
   }
@@ -400,7 +396,8 @@ compute_restored_canal_area <- function(sf = 0.5) {
   india_canal_frac <- raster(wfdei_frac)
   india_canal_frac[wfdei_frac] <- 0
 
-  ## Compute fractional grid cell areas
+  ## Compile list of maps showing the fractional grid cell
+  ## area belonging to each canal command area
   command_area_ids <- india_command_areas$ID
   command_area_maps <- lapply(command_area_ids, FUN=function(x) india_canal_frac)
   for (i in 1:length(command_area_ids)) {
@@ -437,16 +434,19 @@ compute_restored_canal_area <- function(sf = 0.5) {
       (command_area_maps[[i]] / india_canal_frac) * india_canal_frac_adj
     )
   }
-  india_canal_frac <- stackApply(stack(command_area_maps), indices=rep(1, length(command_area_maps)), fun=sum)
+  india_canal_frac <- stackApply(
+    stack(command_area_maps),
+    indices=rep(1, length(command_area_maps)), fun=sum
+  )
 
   ## ##################################################### ##
   ## Step 3: Compute restored area
   ## ##################################################### ##
 
   restored_irrigation_source_maps <-
-      irrigation_source_maps %>%
-      unstack %>%
-      setNames(irrigation_sources)
+    irrigation_source_maps %>%
+    unstack %>%
+    setNames(irrigation_sources)
 
   for (i in 1:length(command_area_maps)) {
     ## Fraction of each cell belonging to current grid square
@@ -510,31 +510,27 @@ compute_restored_canal_area <- function(sf = 0.5) {
     }
   }
 
+  file_ptn <- "icrisat_%s_%s_2010_india_0.500000Deg_restored_canal.tif"
   for (i in 1:length(irrigation_sources)) {
     source <- irrigation_sources[i]
     writeRaster(
       restored_irrigation_source_maps[[source]],
-      file.path(
-        outputdir,
-        paste0(
-          "icrisat_kharif_",
-          source,
-          "_", reference_year,
-          "_india_0.500000Deg_restored_canal.tif"
-        )
-      ),
+      file.path(outputdir, sprintf(file_ptn, "kharif", source)),
       overwrite=TRUE
     )
 
-    ## Copy other maps
+    ## Copy maps for other seasons from current canal area
     for (season in c("rabi", "zaid", "continuous")) {
       fn0 <- file.path(
         "resources/irrigated_area_maps",
-        paste0("icrisat_", season, "_", source, "_2010_india_0.500000Deg_current_canal.tif")
+        sprintf(
+          "icrisat_%s_%s_2010_india_0.500000Deg_current_canal.tif",
+          season, source
+        )
       )
       fn1 <- file.path(
         outputdir,
-        paste0("icrisat_", season, "_", source, "_2010_india_0.500000Deg_current_canal.tif")
+        sprintf(file_ptn, season, source)
       )
       cmd <- paste0("cp ", fn0, " ", fn1)
       system(cmd)
@@ -546,106 +542,48 @@ compute_target_canal_area <- function(datadir,
                                       year_str = "[0-9]{4}",
                                       f_leakage = 0.15,
                                       ...) {
-  ## Recharge
-  fs <- list.files(
-    datadir,
-    pattern = paste0("^recharge_current_canal_", year_str, "_.*.tif$"),
-    full.names = TRUE
-  )
-  if (length(fs) > 1) {
-    recharge <- stackApply(stack(fs), indices = rep(1, length(fs)), fun = mean)
-  } else if (length(fs) == 1) {
-    recharge <- raster(fs[1])
+
+  load_wb_component <- function(component, ...) {
+    ptn <- paste0("^", component, "_current_canal_", year_str, "_.*.tif$")
+    fs <- list.files(datadir, ptn, full.names = TRUE)
+    if (length(fs) > 1) {
+      x <- stackApply(stack(fs), indices = rep(1, length(fs)), fun = mean)
+    } else if (length(fs) == 1) {
+      x <- raster(fs[1])
+    }
+    x
   }
-  ## Abstraction
-  fs <- list.files(
-    datadir,
-    pattern = paste0("^abstraction_current_canal_", year_str, "_.*.tif$"),
-    full.names = TRUE
-  )
-  ## abstraction <- stackApply(stack(fs), indices = rep(1, length(fs)), fun = mean)
-  if (length(fs) > 1) {
-    abstraction <- stackApply(stack(fs), indices = rep(1, length(fs)), fun = mean)
-  } else if (length(fs) == 1) {
-    abstraction <- raster(fs[1])
-  }
-  ## GW irrigation
-  fs <- list.files(
-    datadir,
-    pattern = paste0("^rabi_gw_irrigation_current_canal_", year_str, "_.*.tif$"),
-    full.names = TRUE
-  )
-  ## rabi_gw_irrigation <- stackApply(stack(fs), indices = rep(1, length(fs)), fun = mean)
-  if (length(fs) > 1) {
-    rabi_gw_irrigation <- stackApply(stack(fs), indices = rep(1, length(fs)), fun = mean)
-  } else if (length(fs) == 1) {
-    rabi_gw_irrigation <- raster(fs[1])
-  }
-  fs <- list.files(
-    datadir,
-    pattern = paste0("^zaid_gw_irrigation_current_canal_", year_str, "_.*.tif$"),
-    full.names = TRUE
-  )
-  ## zaid_gw_irrigation <- stackApply(stack(fs), indices = rep(1, length(fs)), fun = mean)
-  if (length(fs) > 1) {
-    zaid_gw_irrigation <- stackApply(stack(fs), indices = rep(1, length(fs)), fun = mean)
-  } else if (length(fs) == 1) {
-    zaid_gw_irrigation <- raster(fs[1])
-  }
-  fs <- list.files(
-    datadir,
-    pattern = paste0("^continuous_gw_irrigation_current_canal_", year_str, "_.*.tif$"),
-    full.names = TRUE
-  )
-  ## continuous_gw_irrigation <- stackApply(stack(fs), indices = rep(1, length(fs)), fun = mean)
-  if (length(fs) > 1) {
-    continuous_gw_irrigation <- stackApply(stack(fs), indices = rep(1, length(fs)), fun = mean)
-  } else if (length(fs) == 1) {
-    continuous_gw_irrigation <- raster(fs[1])
-  }
-  fs <- list.files(
-    datadir,
-    pattern = paste0("^kharif_total_irrigation_current_canal_", year_str, "_.*.tif$"),
-    full.names = TRUE
-  )
-  ## kharif_total_irrigation <- stackApply(stack(fs), indices = rep(1, length(fs)), fun = mean)
-  if (length(fs) > 1) {
-    kharif_total_irrigation <- stackApply(stack(fs), indices = rep(1, length(fs)), fun = mean)
-  } else if (length(fs) == 1) {
-    kharif_total_irrigation <- raster(fs[1])
-  }
-  f_kharif_gw <- (
-    (recharge - rabi_gw_irrigation - zaid_gw_irrigation - continuous_gw_irrigation + f_leakage * kharif_total_irrigation)
-    / (kharif_total_irrigation + f_leakage * kharif_total_irrigation)
-  )
-  f_kharif_gw[f_kharif_gw < 0] <- 0
-  f_kharif_gw[f_kharif_gw > 1] <- 1
-  f_kharif_sw <- 1 - f_kharif_gw
-  list(sw=f_kharif_sw, gw=f_kharif_gw)
+  recharge <- load_wb_component("recharge")
+  abstraction <- load_wb_component("abstraction")
+  rabi_gw_irrigation <- load_wb_component("rabi_gw_irrigation")
+  zaid_gw_irrigation <- load_wb_component("zaid_gw_irrigation")
+  continuous_gw_irrigation <- load_wb_component("continuous_gw_irrigation")
+  kharif_total_irrigation <- load_wb_component("kharif_total_irrigation")
+  NULL
+  ## ## This estimates area given an estimate of leakage
+  ## f_kharif_gw <- (
+  ##   (recharge - rabi_gw_irrigation - zaid_gw_irrigation - continuous_gw_irrigation + f_leakage * kharif_total_irrigation)
+  ##   / (kharif_total_irrigation + f_leakage * kharif_total_irrigation)
+  ## )
+  ## f_kharif_gw[f_kharif_gw < 0] <- 0
+  ## f_kharif_gw[f_kharif_gw > 1] <- 1
+  ## f_kharif_sw <- 1 - f_kharif_gw
+  ## list(sw=f_kharif_sw, gw=f_kharif_gw)
 }
 
-compute_restored_canal_policy <- function(inputdir, outputdir, f_leakage, ...) {
+## compute_restored_canal_policy <- function(inputdir, outputdir, f_leakage, ...) {
+compute_restored_canal_policy <- function(inputdir, outputdir, ...) {
 
-  ## Do everything in this function - do not use make-irrig-policy.R
-  ##
-  ## Step 1: Increase area
-  ## Step 2: Compute leakage needed to achieve water balance
+  ## ## Load current canal [to get total irrigated area]
+  ## fs <- list.files(
+  ##   path = "resources/irrigated_area_maps",
+  ##   pattern = "icrisat_kharif_.*_2010_india_0.500000Deg.tif",
+  ##   full.names = TRUE
+  ## )
+  ## total_irrigated_area <- stack(fs) %>%
+  ##   stackApply(indices = rep(1, length(fs)), fun = sum)
 
-  ## Load current canal [to get total irrigated area]
-  fs <- list.files(
-    path = "resources/irrigated_area_maps",
-    pattern = "icrisat_kharif_.*_2010_india_0.500000Deg.tif",
-    full.names = TRUE
-  )
-  total_irrigated_area <- stack(fs) %>%
-    stackApply(indices = rep(1, length(fs)), fun = sum)
-
-  ## TODO
-  ## Here we work out the level of leakage that is needed
-  ## Step 1: Achieve a minimum coverage of 70% of cropland
-  ## Step 2: Work out leakage that would be required to
-  ##         achieve net water balance
-
+  ## TODO `summarise_water_balance` doesn't seem to account for canal leakage???
   ## TODO adapt `compute_target_canal_area` to compute optimum leakage
   f_kharif <- compute_target_canal_area(
     inputdir,
@@ -654,189 +592,189 @@ compute_restored_canal_policy <- function(inputdir, outputdir, f_leakage, ...) {
   f_kharif_sw <- f_kharif$sw
   f_kharif_gw <- f_kharif$gw
 
-  ## f_kharif_sw <- resample(f_kharif_sw, india_cmd_area)
-  ## f_kharif_sw <- f_kharif_sw * india_cmd_area
-  ## plot(f_kharif_sw)
-  ## writeRaster(f_kharif_sw, "../data/restored_canal_mean.tif", overwrite = TRUE)
+  ## ## f_kharif_sw <- resample(f_kharif_sw, india_cmd_area)
+  ## ## f_kharif_sw <- f_kharif_sw * india_cmd_area
+  ## ## plot(f_kharif_sw)
+  ## ## writeRaster(f_kharif_sw, "../data/restored_canal_mean.tif", overwrite = TRUE)
 
-  ## Divide between the five irrigation sources considered
-  canal_irrigated_area <- total_irrigated_area * f_kharif_sw
-  other_sources_irrigated_area <- total_irrigated_area * 0.
-  other_wells_irrigated_area <- total_irrigated_area * 0.
-  tanks_irrigated_area <- total_irrigated_area * 0.
-  tubewell_irrigated_area <- total_irrigated_area * f_kharif_gw
+  ## ## Divide between the five irrigation sources considered
+  ## canal_irrigated_area <- total_irrigated_area * f_kharif_sw
+  ## other_sources_irrigated_area <- total_irrigated_area * 0.
+  ## other_wells_irrigated_area <- total_irrigated_area * 0.
+  ## tanks_irrigated_area <- total_irrigated_area * 0.
+  ## tubewell_irrigated_area <- total_irrigated_area * f_kharif_gw
 
-  ## FIXME shouldn't be writing to irrigated_area_maps
-  get_filename <- function(source) {
-    fn <- sprintf("icrisat_kharif_%s_2010_india_0.500000Deg_restored_canal.tif", source)
-    ## return(file.path("resources/irrigated_area_maps", fn))
-    return(file.path(outputdir, fn))
-  }
-  writeRaster(
-    canal_irrigated_area,
-    get_filename("canal"),
-    overwrite = TRUE
-  )
-  writeRaster(
-    other_sources_irrigated_area,
-    get_filename("other_sources"),
-    overwrite = TRUE
-  )
-  writeRaster(
-    other_wells_irrigated_area,
-    get_filename("other_wells"),
-    overwrite = TRUE
-  )
-  writeRaster(
-    tanks_irrigated_area,
-    get_filename("tanks"),
-    overwrite = TRUE
-  )
-  writeRaster(
-    tubewell_irrigated_area,
-    get_filename("tubewells"),
-    overwrite = TRUE
-  )
+  ## ## FIXME shouldn't be writing to irrigated_area_maps
+  ## get_filename <- function(source) {
+  ##   fn <- sprintf("icrisat_kharif_%s_2010_india_0.500000Deg_restored_canal.tif", source)
+  ##   ## return(file.path("resources/irrigated_area_maps", fn))
+  ##   return(file.path(outputdir, fn))
+  ## }
+  ## writeRaster(
+  ##   canal_irrigated_area,
+  ##   get_filename("canal"),
+  ##   overwrite = TRUE
+  ## )
+  ## writeRaster(
+  ##   other_sources_irrigated_area,
+  ##   get_filename("other_sources"),
+  ##   overwrite = TRUE
+  ## )
+  ## writeRaster(
+  ##   other_wells_irrigated_area,
+  ##   get_filename("other_wells"),
+  ##   overwrite = TRUE
+  ## )
+  ## writeRaster(
+  ##   tanks_irrigated_area,
+  ##   get_filename("tanks"),
+  ##   overwrite = TRUE
+  ## )
+  ## writeRaster(
+  ##   tubewell_irrigated_area,
+  ##   get_filename("tubewells"),
+  ##   overwrite = TRUE
+  ## )
 
-  ## FIXME - Rabi/zaid/continuous are as for current canal
-  ##
-  ## Rabi - min canal irrigated area
-  fs <- list.files(
-    path = "resources/irrigated_area_maps",
-    pattern = "icrisat_rabi_.*_2010_india_0.500000Deg.tif",
-    full.names = TRUE
-  )
-  total_irrigated_area <- stack(fs) %>%
-    stackApply(indices = rep(1, length(fs)), fun = sum)
-  fs <- list.files(
-    path = "resources/irrigated_area_maps",
-    pattern = "icrisat_rabi_canal_[0-9]{4}_india_0.500000Deg.tif",
-    full.names = TRUE
-  )
-  min_canal_area <- stack(fs) %>%
-    stackApply(indices = rep(1, length(fs)), fun = min)
-  canal_irrigated_area <- min_canal_area
-  other_sources_irrigated_area <- total_irrigated_area * 0.
-  other_wells_irrigated_area <- total_irrigated_area * 0.
-  tanks_irrigated_area <- total_irrigated_area * 0.
-  tubewell_irrigated_area <- total_irrigated_area - canal_irrigated_area
-  get_filename <- function(source) {
-    fn <- sprintf("icrisat_rabi_%s_2010_india_0.500000Deg_restored_canal.tif", source)
-    ## return(file.path("resources/irrigated_area_maps", fn))
-    return(file.path(outputdir, fn))
-  }
-  writeRaster(
-    canal_irrigated_area,
-    get_filename("canal"),
-    overwrite = TRUE
-  )
-  writeRaster(
-    other_sources_irrigated_area,
-    get_filename("other_sources"),
-    overwrite = TRUE
-  )
-  writeRaster(
-    other_wells_irrigated_area,
-    get_filename("other_wells"),
-    overwrite = TRUE
-  )
-  writeRaster(
-    tanks_irrigated_area,
-    get_filename("tanks"),
-    overwrite = TRUE
-  )
-  writeRaster(
-    tubewell_irrigated_area,
-    get_filename("tubewells"),
-    overwrite = TRUE
-  )
+  ## ## FIXME - Rabi/zaid/continuous are as for current canal
+  ## ##
+  ## ## Rabi - min canal irrigated area
+  ## fs <- list.files(
+  ##   path = "resources/irrigated_area_maps",
+  ##   pattern = "icrisat_rabi_.*_2010_india_0.500000Deg.tif",
+  ##   full.names = TRUE
+  ## )
+  ## total_irrigated_area <- stack(fs) %>%
+  ##   stackApply(indices = rep(1, length(fs)), fun = sum)
+  ## fs <- list.files(
+  ##   path = "resources/irrigated_area_maps",
+  ##   pattern = "icrisat_rabi_canal_[0-9]{4}_india_0.500000Deg.tif",
+  ##   full.names = TRUE
+  ## )
+  ## min_canal_area <- stack(fs) %>%
+  ##   stackApply(indices = rep(1, length(fs)), fun = min)
+  ## canal_irrigated_area <- min_canal_area
+  ## other_sources_irrigated_area <- total_irrigated_area * 0.
+  ## other_wells_irrigated_area <- total_irrigated_area * 0.
+  ## tanks_irrigated_area <- total_irrigated_area * 0.
+  ## tubewell_irrigated_area <- total_irrigated_area - canal_irrigated_area
+  ## get_filename <- function(source) {
+  ##   fn <- sprintf("icrisat_rabi_%s_2010_india_0.500000Deg_restored_canal.tif", source)
+  ##   ## return(file.path("resources/irrigated_area_maps", fn))
+  ##   return(file.path(outputdir, fn))
+  ## }
+  ## writeRaster(
+  ##   canal_irrigated_area,
+  ##   get_filename("canal"),
+  ##   overwrite = TRUE
+  ## )
+  ## writeRaster(
+  ##   other_sources_irrigated_area,
+  ##   get_filename("other_sources"),
+  ##   overwrite = TRUE
+  ## )
+  ## writeRaster(
+  ##   other_wells_irrigated_area,
+  ##   get_filename("other_wells"),
+  ##   overwrite = TRUE
+  ## )
+  ## writeRaster(
+  ##   tanks_irrigated_area,
+  ##   get_filename("tanks"),
+  ##   overwrite = TRUE
+  ## )
+  ## writeRaster(
+  ##   tubewell_irrigated_area,
+  ##   get_filename("tubewells"),
+  ##   overwrite = TRUE
+  ## )
 
-  ## Zaid - no canal irrigated area
-  fs <- list.files(
-    path = "resources/irrigated_area_maps",
-    pattern = "icrisat_zaid_.*_2010_india_0.500000Deg.tif",
-    full.names = TRUE
-  )
-  total_irrigated_area <- stack(fs) %>%
-    stackApply(indices = rep(1, length(fs)), fun = sum)
-  canal_irrigated_area <- total_irrigated_area * 0.
-  other_sources_irrigated_area <- total_irrigated_area * 0.
-  other_wells_irrigated_area <- total_irrigated_area * 0.
-  tanks_irrigated_area <- total_irrigated_area * 0.
-  tubewell_irrigated_area <- total_irrigated_area - canal_irrigated_area
-  get_filename <- function(source) {
-    fn <- sprintf("icrisat_zaid_%s_2010_india_0.500000Deg_restored_canal.tif", source)
-    ## return(file.path("resources/irrigated_area_maps", fn))
-    return(file.path(outputdir, fn))
-  }
-  writeRaster(
-    canal_irrigated_area,
-    get_filename("canal"),
-    overwrite = TRUE
-  )
-  writeRaster(
-    other_sources_irrigated_area,
-    get_filename("other_sources"),
-    overwrite = TRUE
-  )
-  writeRaster(
-    other_wells_irrigated_area,
-    get_filename("other_wells"),
-    overwrite = TRUE
-  )
-  writeRaster(
-    tanks_irrigated_area,
-    get_filename("tanks"),
-    overwrite = TRUE
-  )
-  writeRaster(
-    tubewell_irrigated_area,
-    get_filename("tubewells"),
-    overwrite = TRUE
-  )
+  ## ## Zaid - no canal irrigated area
+  ## fs <- list.files(
+  ##   path = "resources/irrigated_area_maps",
+  ##   pattern = "icrisat_zaid_.*_2010_india_0.500000Deg.tif",
+  ##   full.names = TRUE
+  ## )
+  ## total_irrigated_area <- stack(fs) %>%
+  ##   stackApply(indices = rep(1, length(fs)), fun = sum)
+  ## canal_irrigated_area <- total_irrigated_area * 0.
+  ## other_sources_irrigated_area <- total_irrigated_area * 0.
+  ## other_wells_irrigated_area <- total_irrigated_area * 0.
+  ## tanks_irrigated_area <- total_irrigated_area * 0.
+  ## tubewell_irrigated_area <- total_irrigated_area - canal_irrigated_area
+  ## get_filename <- function(source) {
+  ##   fn <- sprintf("icrisat_zaid_%s_2010_india_0.500000Deg_restored_canal.tif", source)
+  ##   ## return(file.path("resources/irrigated_area_maps", fn))
+  ##   return(file.path(outputdir, fn))
+  ## }
+  ## writeRaster(
+  ##   canal_irrigated_area,
+  ##   get_filename("canal"),
+  ##   overwrite = TRUE
+  ## )
+  ## writeRaster(
+  ##   other_sources_irrigated_area,
+  ##   get_filename("other_sources"),
+  ##   overwrite = TRUE
+  ## )
+  ## writeRaster(
+  ##   other_wells_irrigated_area,
+  ##   get_filename("other_wells"),
+  ##   overwrite = TRUE
+  ## )
+  ## writeRaster(
+  ##   tanks_irrigated_area,
+  ##   get_filename("tanks"),
+  ##   overwrite = TRUE
+  ## )
+  ## writeRaster(
+  ##   tubewell_irrigated_area,
+  ##   get_filename("tubewells"),
+  ##   overwrite = TRUE
+  ## )
 
-  ## Continuous - no canal irrigated area
-  fs <- list.files(
-    path = "resources/irrigated_area_maps",
-    pattern = "icrisat_continuous_.*_2010_india_0.500000Deg.tif",
-    full.names = TRUE
-  )
-  total_irrigated_area <- stack(fs) %>% stackApply(indices = rep(1, length(fs)), fun = sum)
-  canal_irrigated_area <- total_irrigated_area * 0.
-  other_sources_irrigated_area <- total_irrigated_area * 0.
-  other_wells_irrigated_area <- total_irrigated_area * 0.
-  tanks_irrigated_area <- total_irrigated_area * 0.
-  tubewell_irrigated_area <- total_irrigated_area - canal_irrigated_area
-  get_filename <- function(source) {
-    fn <- sprintf("icrisat_continuous_%s_2010_india_0.500000Deg_restored_canal.tif", source)
-    ## return(file.path("resources/irrigated_area_maps", fn))
-    return(file.path(outputdir, fn))
-  }
-  writeRaster(
-    canal_irrigated_area,
-    get_filename("canal"),
-    overwrite = TRUE
-  )
-  writeRaster(
-    other_sources_irrigated_area,
-    get_filename("other_sources"),
-    overwrite = TRUE
-  )
-  writeRaster(
-    other_wells_irrigated_area,
-    get_filename("other_wells"),
-    overwrite = TRUE
-  )
-  writeRaster(
-    tanks_irrigated_area,
-    get_filename("tanks"),
-    overwrite = TRUE
-  )
-  writeRaster(
-    tubewell_irrigated_area,
-    get_filename("tubewells"),
-    overwrite = TRUE
-  )
+  ## ## Continuous - no canal irrigated area
+  ## fs <- list.files(
+  ##   path = "resources/irrigated_area_maps",
+  ##   pattern = "icrisat_continuous_.*_2010_india_0.500000Deg.tif",
+  ##   full.names = TRUE
+  ## )
+  ## total_irrigated_area <- stack(fs) %>% stackApply(indices = rep(1, length(fs)), fun = sum)
+  ## canal_irrigated_area <- total_irrigated_area * 0.
+  ## other_sources_irrigated_area <- total_irrigated_area * 0.
+  ## other_wells_irrigated_area <- total_irrigated_area * 0.
+  ## tanks_irrigated_area <- total_irrigated_area * 0.
+  ## tubewell_irrigated_area <- total_irrigated_area - canal_irrigated_area
+  ## get_filename <- function(source) {
+  ##   fn <- sprintf("icrisat_continuous_%s_2010_india_0.500000Deg_restored_canal.tif", source)
+  ##   ## return(file.path("resources/irrigated_area_maps", fn))
+  ##   return(file.path(outputdir, fn))
+  ## }
+  ## writeRaster(
+  ##   canal_irrigated_area,
+  ##   get_filename("canal"),
+  ##   overwrite = TRUE
+  ## )
+  ## writeRaster(
+  ##   other_sources_irrigated_area,
+  ##   get_filename("other_sources"),
+  ##   overwrite = TRUE
+  ## )
+  ## writeRaster(
+  ##   other_wells_irrigated_area,
+  ##   get_filename("other_wells"),
+  ##   overwrite = TRUE
+  ## )
+  ## writeRaster(
+  ##   tanks_irrigated_area,
+  ##   get_filename("tanks"),
+  ##   overwrite = TRUE
+  ## )
+  ## writeRaster(
+  ##   tubewell_irrigated_area,
+  ##   get_filename("tubewells"),
+  ##   overwrite = TRUE
+  ## )
 }
 
 compute_current_canal_policy <- function(datadir, ...) {
@@ -1042,6 +980,7 @@ summarise_water_balance <- function(stem,
                                     years,
                                     outputdir) {
 
+  ## Loop through years
   pb = txtProgressBar(min = 0, max = length(years) - 1, initial = 0)
   for (k in 1:(length(years) - 1)) {
     yr <- years[k]

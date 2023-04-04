@@ -10,6 +10,7 @@ if (sys.nframe() == 0L) {
   m <- regexpr("(?<=^--file=).+", args, perl = TRUE)
   cwd <- dirname(regmatches(args, m))
 }
+
 ## Load custom utilities
 source(file.path(cwd, "utils.R"))
 
@@ -46,6 +47,8 @@ if (stem %in% c("JULES_vn6.1_irrig_current")) {
   ## two steps. First we compute some policies of
   ## expanding canal area. Then we estimate the
   ## amount of leakage that would be required.
+  compute_restored_canal_area() # ???
+  summarise_water_balance(stem, "restored_canal", years, outputdir) # ???
   compute_restored_canal_policy(
     inputdir = file.path("results", stem),
     outputdir = "results/irrigated_area_maps",

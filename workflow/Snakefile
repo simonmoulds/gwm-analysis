@@ -56,7 +56,6 @@ rule prepare_command_areas:
         """
 
 
-# # TODO reinstate this rule and adjust to achieve minimum coverage
 # rule make_irrig_policy:
 #     input:
 #         land_frac='resources/WFD-EI-LandFraction2d_IGP.tif',
