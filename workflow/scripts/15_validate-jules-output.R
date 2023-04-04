@@ -328,6 +328,8 @@ for (i in 1:length(jules_time_yearmon)) {
       id_stem_label <- names(stems)[k]
       jules_data <- get_jules_data(id_stem, year, month, jules_vars)
       jules_data <- jules_data %>% crop(study_rgn_ext)
+      jules_data <- resample(jules_data, india_cmd_area, method = "near")
+      jules_data <- jules_data * india_cmd_area
       fn <- paste0("jules_", id_stem_label, "_", variable, "_", year, "_", month, ".tif")
       writeRaster(
         jules_data,

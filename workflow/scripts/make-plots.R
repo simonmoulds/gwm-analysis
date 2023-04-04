@@ -10,6 +10,8 @@ library(rnaturalearthdata)
 library(rgdal)
 library(spatialEco)
 library(tidyverse)
+library(lubridate)
+library(zoo)
 library(patchwork)
 library(cowplot)
 library(zyp)
@@ -56,6 +58,9 @@ years <- 1979:2013
 types <- c("gw", "sw", "total")
 
 # India comand areas as polygon, for plotting
+india_cmd_area <- terra::rast("results/india_command_area.tif")
+india_cmd_area_west <- terra::rast("results/india_command_area_west.tif")
+india_cmd_area_east <- terra::rast("results/india_command_area_east.tif")
 india_cmd_area_poly <- st_read("results/plotting/india_command_area.gpkg")
 
 # Global map for plotting
@@ -97,6 +102,164 @@ legend_title_size <- 6
 tag_label_size <- 6
 strip_label_size <- 6
 fig1_keywidth <- 0.3
+
+## ####################################################### ##
+## ####################################################### ##
+##
+## Validation plots
+##
+## ####################################################### ##
+## ####################################################### ##
+
+# Calculate weights for averaging
+w <- terra::cellSize(india_cmd_area)
+w <- w / 1000 / 1000
+w <- w * india_cmd_area
+wsum <- global(w, mean, na.rm = TRUE)
+wsum <- as.numeric(wsum)
+
+## Plot 1: GLEAM comparison
+##
+## Note - GLEAM does not perform well over irrigated areas - https://doi.org/10.1175/JHM-D-17-0038.1
+##
+## Hence compare the model simulation without irrigation
+gleam_dir <- "results/validation/gleam_comparison"
+tm <- seq(as.Date("2003-01-01"), as.Date("2010-12-01"), by = "1 month")
+gleam_maps <- jules_irrig_maps <- jules_no_irrig_maps <- list()
+gleam_area_avg <- jules_irrig_area_avg <- jules_no_irrig_area_avg <- rep(NA, length(tm))
+
+for (i in 1:length(tm)) {
+  yr <- year(tm[i])
+  mn <- month(tm[i])
+
+  ## GLEAM
+  fn <- sprintf("gleam_et_%s_%s.tif", yr, mn)
+  gleam <- terra::rast(file.path(gleam_dir, fn))
+  gleam <- terra::resample(gleam, india_cmd_area, method = "near")
+  gleam <- gleam * india_cmd_area
+
+  ## JULES
+  fn <- sprintf("jules_irrig_et_%s_%s.tif", yr, mn)
+  jules_irrig <- terra::rast(file.path(gleam_dir, fn))
+  jules_irrig <- terra::resample(jules_irrig, india_cmd_area, method = "near")
+  jules_irrig <- jules_irrig * india_cmd_area
+
+  ## fn <- sprintf("jules_irrig_current_et_%s_%s.tif", yr, mn)
+  ## jules_irrig_current_maps[[i]] <- terra::rast(file.path(gleam_dir, fn))
+  fn <- sprintf("jules_no_irrig_et_%s_%s.tif", yr, mn)
+  jules_no_irrig <- terra::rast(file.path(gleam_dir, fn))
+  jules_no_irrig <- terra::resample(jules_no_irrig, india_cmd_area, method = "near")
+  jules_no_irrig <- jules_no_irrig * india_cmd_area
+
+  gleam_maps[[i]] <- gleam
+  jules_irrig_maps[[i]] <- jules_irrig
+  jules_no_irrig_maps[[i]] <- jules_no_irrig
+
+  gleam_area_avg[i] <- as.numeric(global(gleam * w, mean, na.rm = TRUE) / wsum)
+  jules_irrig_area_avg[i] <- as.numeric(global(jules_irrig * w, mean, na.rm = TRUE) / wsum)
+  jules_no_irrig_area_avg[i] <- as.numeric(global(jules_no_irrig * w, mean, na.rm = TRUE) / wsum)
+}
+
+df <- tibble(
+  tm = tm,
+  gleam = gleam_area_avg,
+  jules_irrig = jules_irrig_area_avg,
+  jules_no_irrig = jules_no_irrig_area_avg
+)
+
+## plot(df$tm, df$gleam, ylim = c(0, 0.15))
+## ## lines(df$tm, df$jules_irrig, col="blue")
+## lines(df$tm, df$jules_no_irrig, col="magenta")
+
+gleam <- terra::rast(gleam_maps)
+jules_irrig <- terra::rast(jules_irrig_maps)
+jules_irrig_current <- terra::rast(jules_irrig_maps)
+jules_no_irrig <- terra::rast(jules_no_irrig_maps)
+
+gleam <- terra::app(gleam, mean)
+jules_irrig <- terra::app(jules_irrig, mean)
+jules_irrig_current <- terra::app(jules_irrig_current, mean)
+jules_no_irrig <- terra::app(jules_no_irrig, mean)
+
+jules_irrig_bias <- jules_irrig - gleam
+jules_no_irrig_bias <- jules_no_irrig - gleam
+
+## p1 - time series
+## p2 - scatterplot
+## p3 - spatial plot of bias
+
+stop()
+
+## Monthly time series for whole JULES simulation period
+start_year <- 1980
+end_year <- 2010
+jules_years <- seq(start_year, end_year)
+jules_time_yearmon <- seq(
+  ym(paste0(start_year, "01")),
+  ym(paste0(end_year, "12")), by = "1 month"
+)
+jules_time_yearmon <- as.yearmon(jules_time_yearmon)
+
+## ISIMIP2b comparison
+isimip_dir <- "results/validation/isimip_comparison"
+variables <- c("qtot", "airruse")
+models <- c("h08", "lpjml", "matsiro", "pcr-globwb", "vic", "watergap2-2c")
+climate <- "watch-wfdei"
+society <- "varsoc"
+
+## Here we extract information needed to compute bias wrt ISIMIP multimodel mean
+## TODO how should the data be structured?
+datalist <- list()
+for (i in 1:length(jules_time_yearmon)) {
+  tm <- jules_time_yearmon[i]
+  yr <- year(tm)
+  mo <- month(tm)
+
+  for (j in 1:length(variables)) {
+    var <- variables[j]
+    for (k in 1:length(models)) {
+      model <- models[k]
+      fn <- paste0(model, "_", climate, "_", society, "_", var, "_", yr, "_", mo, ".tif")
+      if (file.exists(file.path(isimip_dir, fn))) {
+        r <- terra::rast(file.path(isimip_dir, fn))
+        area_avg <- as.numeric(global(r * w, mean, na.rm = TRUE) / wsum)
+        datalist[[length(datalist) + 1]] <- tibble(
+          time = tm, model=model, variable = var, value = area_avg)
+      }
+    }
+    jules_fn <- paste0("jules_irrig_", var, "_", yr, "_", mo, ".tif")
+    r <- terra::rast(file.path(isimip_dir, jules_fn))
+    r <- resample(r, india_cmd_area, method = "near")
+    r <- r * india_cmd_area
+    area_avg <- as.numeric(global(r * w, mean, na.rm = TRUE) / wsum)
+    datalist[[length(datalist) + 1]] <- tibble(
+      time = tm, model = "jules_irrig", variable = var, value = area_avg
+    )
+  }
+}
+
+data <- do.call("rbind", datalist)
+
+qtot <- data %>% filter(variable %in% "airruse") %>% pivot_wider(names_from = "model", values_from = "value")
+## data <- data %>% pivot_wider(names_from = "variable", values_from = "value")
+
+qtot_avg <- qtot %>% mutate(month = month(time)) %>% group_by(month, variable) %>% summarise(across(everything(), ~ mean(.x, na.rm = TRUE)))
+
+qtot_avg <- qtot_avg %>% ungroup() %>% dplyr::select(-variable, -time) %>% pivot_longer(-month, names_to = "model", values_to = "value")
+
+p <- ggplot(qtot_avg, aes(x=month, y=value, colour = model)) +
+  geom_line()
+
+plot(qtot_avg$month, qtot_avg[["pcr-globwb"]], ylim = c(0, 0.08))
+lines(qtot_avg$month, qtot_avg[["jules_irrig"]])
+
+stop()
+
+## ## Plot 2: Recharge comparison
+## recharge_dir <- "results/validation/recharge_comparison"
+## fn <- "average_annual_recharge.tif"
+## annual_recharge <- terra::rast(file.path(recharge_dir, fn))
+## annual_recharge <- annual_recharge * india_cmd_area # FIXME - all missing
 
 ## ####################################################### ##
 ## ####################################################### ##

@@ -16,17 +16,13 @@ configfile: JULES_MOSART_CONFIG
 STEMS = config['jules']['id_stem']
 HISTORICAL_STEMS = [stem for stem in STEMS if stem != 'JULES_vn6.1_irrig_current']
 
-module jules_mosart:
-    snakefile: github("simonmoulds/jules-mosart", path="workflow/Snakefile", branch="main")
-    config: config
+
+# This snakefile handles the scripts to process JULES output
+include: Snakefile_0
+
 
 rule all:
     input:
-        # expand('results/regrid_filenames_{stem}.txt', stem=STEMS),
-        # expand('results/aggregate_month_filenames_{stem}.txt', stem=STEMS),
-        # expand('results/resample_filenames_{stem}.txt', stem=STEMS),
-        expand('results/relative_irrigation_filenames_{stem}.txt', stem=STEMS),
-        expand('results/relative_monthly_irrigation_filenames_{stem}.txt', stem=STEMS),
         # 'results/command_areas.tif',
         # 'results/command_inlets_0.083333Deg.gpkg',
         # 'results/command_inlets_0.100000Deg.gpkg',
@@ -38,85 +34,6 @@ rule all:
         'results/fig/figure3.png',
         'results/fig/figure4.png'
 
-use rule regrid_jules_output from jules_mosart as jules_mosart_regrid_jules_output with:
-    input:
-        script=os.path.join(
-            JULES_MOSART,
-            'workflow/scripts/regrid-jules-output.py'
-        ),
-        config=JULES_MOSART_CONFIG
-    conda:
-        'envs/conda_environment_base.yml'
-    log:
-        'results/log/regrid_jules_output_{stem}.log'
-
-use rule aggregate_jules_output_month from jules_mosart as jules_mosart_aggregate_jules_output_month with:
-    input:
-        regrid_filenames='results/regrid_filenames_{stem}.txt',
-        script=os.path.join(
-            JULES_MOSART,
-            'workflow/scripts/aggregate-jules-output.py'
-        ),
-        config=JULES_MOSART_CONFIG
-    conda:
-        'envs/conda_environment_base.yml'
-    log:
-        'results/log/aggregate_jules_output_month_{stem}.log'
-
-use rule resample_jules_output from jules_mosart as jules_mosart_resample_jules_output with:
-    input:
-        regrid_filenames='results/regrid_filenames_{stem}.txt',
-        script=os.path.join(
-            JULES_MOSART,
-            'workflow/scripts/resample-jules-output.py'
-        ),
-        config=JULES_MOSART_CONFIG
-    conda:
-        'envs/conda_environment_base.yml'
-    log:
-        'results/log/resample_jules_output_{stem}.log'
-
-rule process_jules_output:
-    input:
-        regrid_filenames='results/regrid_filenames_{stem}.txt',
-        script='workflow/scripts/process-jules-output.py',
-        config=CONFIG
-    output:
-        'results/relative_irrigation_filenames_{stem}.txt'
-    params:
-        outputdir='results/{stem}'
-    conda:
-        'envs/conda_environment_base.yml'
-    log:
-        'results/log/process_jules_output_{stem}.log'
-    shell:
-        """
-        python {input.script} --inputfile {input.regrid_filenames} --outputfile {output} --outputdir {params.outputdir} --config {input.config}
-        """
-
-rule aggregate_relative_irrigation_output_month:
-    input:
-        rel_irrig_filenames='results/relative_irrigation_filenames_{stem}.txt',
-        script='workflow/scripts/aggregate-jules-irrigation-month.py',
-        config=CONFIG
-    output:
-        'results/relative_monthly_irrigation_filenames_{stem}.txt'
-    params:
-        outputdir='results/{stem}'
-    # resources:
-    #     time='00:30:00',
-    #     mem_mb=4000,
-    #     partition='short'
-    conda:
-        'envs/conda_environment_base.yml'
-    # log:
-    #     'results/log/aggregate_relative_irrigation_output_month_{stem}.log'
-    shell:
-        """
-        python {input.script} --inputfile {input.rel_irrig_filenames} --outputfile {output} --outputdir {params.outputdir} --config {input.config}
-        """
-    # script:
-    #     'workflow/scripts/aggregate-jules-irrigation-month.py',
 
 
 rule prepare_command_areas:
@@ -127,7 +44,6 @@ rule prepare_command_areas:
         'results/india_command_area.tif',
         'results/india_command_area_west.tif',
         'results/india_command_area_east.tif',
-        # 'results/command_areas.tif',
         'results/command_inlets_0.083333Deg.gpkg',
         'results/command_inlets_0.100000Deg.gpkg'
     params:
@@ -139,25 +55,29 @@ rule prepare_command_areas:
         Rscript {input.script} {input.config}
         """
 
-rule make_irrig_policy:
-    input:
-        land_frac='resources/WFD-EI-LandFraction2d_IGP.tif',
-        india_frac='resources/india_frac_0.500000Deg.tif',
-        script='workflow/scripts/make-irrig-policy.R',
-    output:
-        directory('results/irrigation_policy_maps')
-    params:
-        None
-    conda:
-        'envs/conda_environment_base.yml'
-    shell:
-        """
-        Rscript {input.script} {input.land_frac} {input.india_frac} {output}
-        """
 
+# # TODO reinstate this rule and adjust to achieve minimum coverage
+# rule make_irrig_policy:
+#     input:
+#         land_frac='resources/WFD-EI-LandFraction2d_IGP.tif',
+#         india_frac='resources/india_frac_0.500000Deg.tif',
+#         script='workflow/scripts/make-irrig-policy.R',
+#     output:
+#         directory('results/irrigation_policy_maps')
+#     params:
+#         None
+#     conda:
+#         'envs/conda_environment_base.yml'
+#     shell:
+#         """
+#         Rscript {input.script} {input.land_frac} {input.india_frac} {output}
+#         """
+
+
+# TODO use maps from above rule [not currently doing this]
 rule compute_water_balance:
     input:
-        'results/irrigation_policy_maps',
+        # 'results/irrigation_policy_maps',
         expand('results/relative_irrigation_filenames_{stem}.txt', stem=STEMS),
         script='workflow/scripts/compute-water-balance.R'
     output:
@@ -170,6 +90,7 @@ rule compute_water_balance:
         """
         Rscript {input.script} {wildcards.stem} {params.outputdir}
         """
+
 
 rule extract_historical_time_series:
     input:
@@ -206,10 +127,6 @@ rule extract_historical_time_series:
 # rule select_gleam_data:
 #     input:
 #         script='workflow/scripts/select-gleam-data.sh'
-
-# rule validate_jules_output:
-#     input:
-#         script='workflow/scripts/validate-jules-output.R'
 
 rule make_plots:
     input:

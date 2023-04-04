@@ -23,7 +23,12 @@ if (stem %in% c("JULES_vn6.1_irrig", "JULES_vn6.1_noirrig")) {
   summarise_water_balance(stem, "historical", years, outputdir)
 }
 
+## Irrigation policy maps:
+## icrisat_{season}_{source}_{reference_year}_india_0.500000Deg_current_canal.tif
+## icrisat_{season}_{source}_{reference_year}_india_0.500000Deg_restored_canal.tif
+
 if (stem %in% c("JULES_vn6.1_irrig_current")) {
+
   ## First we compute the water balance components based
   ## on the current canal irrigation capacity
   dir.create(
@@ -31,13 +36,20 @@ if (stem %in% c("JULES_vn6.1_irrig_current")) {
     recursive = TRUE,
     showWarnings = FALSE
   )
+  ## This takes the current canal area and a
+  ## best guess estimate of canal leakage
   compute_current_canal_policy("results/irrigated_area_maps")
   summarise_water_balance(stem, "current_canal", years, outputdir)
 
-  ## Compute how much canal irrigation needs to be expanded
+  ## Next we compute by how much canal irrigation
+  ## needs to be expanded to meet demand. This has
+  ## two steps. First we compute some policies of
+  ## expanding canal area. Then we estimate the
+  ## amount of leakage that would be required.
   compute_restored_canal_policy(
     inputdir = file.path("results", stem),
-    outputdir = "results/irrigated_area_maps"
+    outputdir = "results/irrigated_area_maps",
+    f_leakage = 0.15
   )
   summarise_water_balance(stem, "restored_canal", years, outputdir)
 }
