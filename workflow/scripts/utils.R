@@ -538,38 +538,38 @@ compute_restored_canal_policy <- function(datadir, sf = 0.5) {
   }
 }
 
-compute_target_canal_area <- function(datadir,
-                                      year_str = "[0-9]{4}",
-                                      f_leakage = 0.15,
-                                      ...) {
+## compute_target_canal_area <- function(datadir,
+##                                       year_str = "[0-9]{4}",
+##                                       f_leakage = 0.15,
+##                                       ...) {
 
-  load_wb_component <- function(component, ...) {
-    ptn <- paste0("^", component, "_current_canal_", year_str, "_.*.tif$")
-    fs <- list.files(datadir, ptn, full.names = TRUE)
-    if (length(fs) > 1) {
-      x <- stackApply(stack(fs), indices = rep(1, length(fs)), fun = mean)
-    } else if (length(fs) == 1) {
-      x <- raster(fs[1])
-    }
-    x
-  }
-  recharge <- load_wb_component("recharge")
-  abstraction <- load_wb_component("abstraction")
-  rabi_gw_irrigation <- load_wb_component("rabi_gw_irrigation")
-  zaid_gw_irrigation <- load_wb_component("zaid_gw_irrigation")
-  continuous_gw_irrigation <- load_wb_component("continuous_gw_irrigation")
-  kharif_total_irrigation <- load_wb_component("kharif_total_irrigation")
-  NULL
-  ## ## This estimates area given an estimate of leakage
-  ## f_kharif_gw <- (
-  ##   (recharge - rabi_gw_irrigation - zaid_gw_irrigation - continuous_gw_irrigation + f_leakage * kharif_total_irrigation)
-  ##   / (kharif_total_irrigation + f_leakage * kharif_total_irrigation)
-  ## )
-  ## f_kharif_gw[f_kharif_gw < 0] <- 0
-  ## f_kharif_gw[f_kharif_gw > 1] <- 1
-  ## f_kharif_sw <- 1 - f_kharif_gw
-  ## list(sw=f_kharif_sw, gw=f_kharif_gw)
-}
+##   load_wb_component <- function(component, ...) {
+##     ptn <- paste0("^", component, "_current_canal_", year_str, "_.*.tif$")
+##     fs <- list.files(datadir, ptn, full.names = TRUE)
+##     if (length(fs) > 1) {
+##       x <- stackApply(stack(fs), indices = rep(1, length(fs)), fun = mean)
+##     } else if (length(fs) == 1) {
+##       x <- raster(fs[1])
+##     }
+##     x
+##   }
+##   recharge <- load_wb_component("recharge")
+##   abstraction <- load_wb_component("abstraction")
+##   rabi_gw_irrigation <- load_wb_component("rabi_gw_irrigation")
+##   zaid_gw_irrigation <- load_wb_component("zaid_gw_irrigation")
+##   continuous_gw_irrigation <- load_wb_component("continuous_gw_irrigation")
+##   kharif_total_irrigation <- load_wb_component("kharif_total_irrigation")
+##   NULL
+##   ## ## This estimates area given an estimate of leakage
+##   ## f_kharif_gw <- (
+##   ##   (recharge - rabi_gw_irrigation - zaid_gw_irrigation - continuous_gw_irrigation + f_leakage * kharif_total_irrigation)
+##   ##   / (kharif_total_irrigation + f_leakage * kharif_total_irrigation)
+##   ## )
+##   ## f_kharif_gw[f_kharif_gw < 0] <- 0
+##   ## f_kharif_gw[f_kharif_gw > 1] <- 1
+##   ## f_kharif_sw <- 1 - f_kharif_gw
+##   ## list(sw=f_kharif_sw, gw=f_kharif_gw)
+## }
 
 ## ## compute_restored_canal_policy <- function(inputdir, outputdir, f_leakage, ...) {
 ## compute_restored_canal_policy <- function(inputdir, outputdir, ...) {
