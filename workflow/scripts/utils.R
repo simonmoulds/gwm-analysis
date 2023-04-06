@@ -1124,7 +1124,7 @@ summarise_water_balance <- function(datadir,
         indices = rep(1, 12), 
         fun = sum
     )
-    fn <- paste-1("annual_precip_", policy, "_", yr, "_", suffix, ".tif")
+    fn <- paste0("annual_precip_", policy, "_", yr, "_", suffix, ".tif")
     writeRaster(
       annual_precip,
       file.path(datadir, fn),
