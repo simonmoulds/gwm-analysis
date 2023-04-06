@@ -500,6 +500,8 @@ compute_restored_canal_policy <- function(datadir, sf = 0.5) {
       new_total_irrigated_area %>%
       `[<-`(!is.finite(.), 0)
 
+    print(total_irrigated_area)
+    print(new_total_irrigated_area)
     if (!all.equal(total_irrigated_area, new_total_irrigated_area)) {
       stop()
     }
