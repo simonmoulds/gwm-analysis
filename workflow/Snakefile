@@ -70,7 +70,7 @@ rule extract_historical_time_series:
         'results/india_command_area_west.tif',
         'results/india_command_area_east.tif',
         'results/command_inlets_0.083333Deg.gpkg',
-        'results/command_inlets_0.100000Deg.gpkg'
+        'results/command_inlets_0.100000Deg.gpkg',
         expand('results/compute_water_balance_{stem}.txt', stem=STEMS),
         script='workflow/scripts/extract-time-series.R'
     output:
