@@ -17,23 +17,15 @@ STEMS = config['jules']['id_stem']
 HISTORICAL_STEMS = [stem for stem in STEMS if stem != 'JULES_vn6.1_irrig_current']
 
 
-# This snakefile handles the scripts to process JULES output
-include: Snakefile_0
+# # This snakefile handles the scripts to process JULES output
+# include: Snakefile_0
 
 
 rule all:
     input:
-        # 'results/command_areas.tif',
-        # 'results/command_inlets_0.083333Deg.gpkg',
-        # 'results/command_inlets_0.100000Deg.gpkg',
-        # 'results/irrigation_policy_maps',
-        expand('results/compute_water_balance_{stem}.txt', stem=STEMS),
-        'results/historical_irrigation_demand_ts.rds',
-        'results/historical_water_balance_ts.rds',
         'results/fig/figure2.png',
         'results/fig/figure3.png',
         'results/fig/figure4.png'
-
 
 
 rule prepare_command_areas:
@@ -56,27 +48,8 @@ rule prepare_command_areas:
         """
 
 
-# rule make_irrig_policy:
-#     input:
-#         land_frac='resources/WFD-EI-LandFraction2d_IGP.tif',
-#         india_frac='resources/india_frac_0.500000Deg.tif',
-#         script='workflow/scripts/make-irrig-policy.R',
-#     output:
-#         directory('results/irrigation_policy_maps')
-#     params:
-#         None
-#     conda:
-#         'envs/conda_environment_base.yml'
-#     shell:
-#         """
-#         Rscript {input.script} {input.land_frac} {input.india_frac} {output}
-#         """
-
-
-# TODO use maps from above rule [not currently doing this]
 rule compute_water_balance:
     input:
-        # 'results/irrigation_policy_maps',
         expand('results/relative_irrigation_filenames_{stem}.txt', stem=STEMS),
         script='workflow/scripts/compute-water-balance.R'
     output:
@@ -93,6 +66,11 @@ rule compute_water_balance:
 
 rule extract_historical_time_series:
     input:
+        'results/india_command_area.tif',
+        'results/india_command_area_west.tif',
+        'results/india_command_area_east.tif',
+        'results/command_inlets_0.083333Deg.gpkg',
+        'results/command_inlets_0.100000Deg.gpkg'
         expand('results/compute_water_balance_{stem}.txt', stem=STEMS),
         script='workflow/scripts/extract-time-series.R'
     output:
@@ -123,9 +101,6 @@ rule extract_historical_time_series:
         Rscript {input.script} {params.outputdir} {params.outputdir}
         """
 
-# rule select_gleam_data:
-#     input:
-#         script='workflow/scripts/select-gleam-data.sh'
 
 rule make_plots:
     input:

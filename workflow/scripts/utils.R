@@ -779,7 +779,10 @@ compute_restored_canal_policy <- function(datadir, sf = 0.5) {
 
 compute_current_canal_policy <- function(datadir, ...) {
 
-  ## Max kharif canal irrigated area
+  ## Assume the current canal irrigated area is the
+  ## maximum canal irrigated area over the study period.
+  ## TODO this seems overly generous - perhaps the maximum
+  ## over the last 10 years?
   fs <- list.files(
     path = "resources/irrigated_area_maps",
     pattern = "icrisat_kharif_.*_2010_india_0.500000Deg.tif",
@@ -807,7 +810,6 @@ compute_current_canal_policy <- function(datadir, ...) {
   tubewell_irrigated_area <- total_irrigated_area - canal_irrigated_area
   get_filename <- function(source) {
     fn <- sprintf("icrisat_kharif_%s_2010_india_0.500000Deg_current_canal.tif", source)
-    ## return(file.path("resources/irrigated_area_maps", fn))
     return(file.path(datadir, fn))
   }
   writeRaster(

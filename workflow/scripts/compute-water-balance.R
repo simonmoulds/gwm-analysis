@@ -20,37 +20,40 @@ start_year <- 1979
 end_year <- 2014
 years <- seq(start_year, end_year)
 
+## These are historical scenarios
 if (stem %in% c("JULES_vn6.1_irrig", "JULES_vn6.1_noirrig")) {
   summarise_water_balance(stem, "historical", years, outputdir)
 }
 
-## Irrigation policy maps:
-## icrisat_{season}_{source}_{reference_year}_india_0.500000Deg_current_canal.tif
-## icrisat_{season}_{source}_{reference_year}_india_0.500000Deg_restored_canal.tif
-
+## Policy scenarios
 if (stem %in% c("JULES_vn6.1_irrig_current")) {
 
-  ## First we compute the water balance components based
-  ## on the current canal irrigation capacity
+  ## Ensure output directory exists
   dir.create(
     "results/irrigated_area_maps",
     recursive = TRUE,
     showWarnings = FALSE
   )
-  ## This takes the current canal area and a
-  ## best guess estimate of canal leakage. It outputs maps
-  ## with the following filename structure:
+
+  ## First we compute the water balance components based
+  ## on the current canal irrigation capacity
+
+  ## This takes the current canal area and a best guess
+  ## estimate of canal leakage. It outputs maps with the
+  ## following filename structure:
   ## icrisat_{season}_{source}_2010_india_0.500000Deg_current_canal.tif
+  ## TODO this currently assumes canal irrigated area is the
+  ## maximum canal irrigated area during the study period,
+  ## which seems overly generous
   compute_current_canal_policy("results/irrigated_area_maps")
-  ## This script then computes the water balance over the
-  ## study period considering the above irrigation sources.
+
+  ## Then we compute the water balance over the study period
+  ## considering the above irrigation sources
   summarise_water_balance(
     outputdir, stem, "current_canal", years,
     fixed_leakage = TRUE,
     f_leakage = 0.
   )
-
-  ## Account for canal leakage
 
   ## Next we compute by how much canal irrigation
   ## needs to be expanded to meet demand. This has
@@ -58,17 +61,16 @@ if (stem %in% c("JULES_vn6.1_irrig_current")) {
   ## expanding canal area. Then we estimate the
   ## amount of leakage that would be required.
   compute_restored_canal_policy("results/irrigated_area_maps", sf = 0.5)
+
+  ## As above, we now compute the water balance
+  ## considering the above computed irrigation sources.
+  ## This time, we allow the leakage to vary to the extent
+  ## needed to achieve a water balance in a given year.
   summarise_water_balance(
     outputdir, stem, "restored_canal", years,
     fixed_leakage = FALSE,
     f_leakage_max = Inf
   )
-  ## compute_restored_canal_policy(
-  ##   inputdir = file.path("results", stem),
-  ##   outputdir = "results/irrigated_area_maps",
-  ##   f_leakage = 0.15
-  ## )
-  ## summarise_water_balance(stem, "restored_canal", years, outputdir)
 }
 
 file.create(sprintf("results/compute_water_balance_%s.txt", stem))
