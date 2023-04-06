@@ -22,7 +22,11 @@ years <- seq(start_year, end_year)
 
 ## These are historical scenarios
 if (stem %in% c("JULES_vn6.1_irrig", "JULES_vn6.1_noirrig")) {
-  summarise_water_balance(stem, "historical", years, outputdir)
+  summarise_water_balance(
+    outputdir, stem, "historical", years,
+    fixed_leakage = TRUE,
+    f_leakage = 0.
+  )
 }
 
 ## Policy scenarios
