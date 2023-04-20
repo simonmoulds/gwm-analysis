@@ -495,15 +495,13 @@ compute_restored_canal_policy <- function(datadir, sf = 0.5) {
       restored_area %>%
       mutate(across(!canal, ~./total_not_canal_area)) %>%
       mutate(across(!canal, ~.*remaining_area))
-    new_total_irrigated_area <- apply(restored_area, 1, sum)
+    new_total_irrigated_area <- apply(restored_area, 1, sum, na.rm = TRUE)
     new_total_irrigated_area <-
       new_total_irrigated_area %>%
       `[<-`(!is.finite(.), 0)
 
-    print(total_irrigated_area)
-    print(new_total_irrigated_area)
-    if (!all.equal(total_irrigated_area, new_total_irrigated_area)) {
-      stop()
+    if (!isTRUE(all.equal(total_irrigated_area, new_total_irrigated_area))) {
+      stop("New irrigated area does not equal old irrigated area")
     }
     for (source in irrigation_sources) {
       map <- restored_irrigation_source_maps[[source]]

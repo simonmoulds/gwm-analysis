@@ -9,6 +9,10 @@ if (sys.nframe() == 0L) {
   args <- commandArgs()
   m <- regexpr("(?<=^--file=).+", args, perl = TRUE)
   cwd <- dirname(regmatches(args, m))
+} else { 
+  stem <- "JULES_vn6.1_irrig_current"
+  outputdir <- paste0("results/", stem)
+  cwd <- "workflow/scripts"
 }
 
 ## Load custom utilities

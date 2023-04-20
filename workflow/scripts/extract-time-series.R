@@ -311,7 +311,7 @@ current_gw_area <- stack(
     full.names = TRUE
   )
 ) %>% stackApply(indices = c(1, 1), fun = sum)
-current_gw_area <- resample(current_gw_area, india, method = "ngb")
+current_gw_area <- resample(current_gw_area, india_cmd_area, method = "ngb")
 current_gw_area <- current_gw_area * india_cmd_area
 writeRaster(current_gw_area, "results/plotting/current_gw_area.tif", overwrite = TRUE) 
 
@@ -321,7 +321,7 @@ current_canal_area <- raster(
     "icrisat_kharif_canal_2010_india_0.500000Deg_current_canal.tif"
   )
 )
-current_canal_area <- resample(current_canal_area, india, method = "ngb")
+current_canal_area <- resample(current_canal_area, india_cmd_area, method = "ngb")
 current_canal_area <- current_canal_area * india_cmd_area
 writeRaster(current_canal_area, "results/plotting/current_canal_area.tif", overwrite = TRUE)
 

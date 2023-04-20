@@ -188,8 +188,6 @@ jules_no_irrig_bias <- jules_no_irrig - gleam
 ## p2 - scatterplot
 ## p3 - spatial plot of bias
 
-stop()
-
 ## Monthly time series for whole JULES simulation period
 start_year <- 1980
 end_year <- 2010
@@ -252,8 +250,6 @@ p <- ggplot(qtot_avg, aes(x=month, y=value, colour = model)) +
 
 plot(qtot_avg$month, qtot_avg[["pcr-globwb"]], ylim = c(0, 0.08))
 lines(qtot_avg$month, qtot_avg[["jules_irrig"]])
-
-stop()
 
 ## ## Plot 2: Recharge comparison
 ## recharge_dir <- "results/validation/recharge_comparison"
