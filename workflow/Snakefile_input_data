@@ -6,7 +6,7 @@ import os
 
 os.environ["PYTHONPATH"] += os.pathsep + "/usr/lib/grass78/etc/python"
 
-configfile: config/config.yml
+# configfile: config/config.yml
 
 rule all:
     input:
