@@ -7,7 +7,7 @@ import os
 os.environ["PYTHONPATH"] += os.pathsep + "/usr/lib/grass78/etc/python"
 
 
-configfile: config/gwm-cvhydro-config.yml
+configfile: 'config/gwm-cvhydro-config.yml'
 
 
 rule all:
