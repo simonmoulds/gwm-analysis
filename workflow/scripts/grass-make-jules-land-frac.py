@@ -14,10 +14,18 @@ from grass.pygrass.modules.shortcuts import raster as r
 from grass.pygrass.modules.shortcuts import vector as v
 from grass.pygrass.modules.shortcuts import temporal as t
 
+esacci_datadir = snakemake.config['esacci_datadir']
+
+# Now we can create a grass session instance
+my_gisdb = os.path.join(os.getenv('HOME'), 'grassdata')
+my_location = 'latlong'
+my_mapset = 'gwm'
+
+user = Session()
+user.open(gisdb=my_gisdb, location=my_location, mapset=my_mapset)
+
 # Remove mask if present
 r.mask(flags="r")
-
-esacci_datadir = snakemake.config['esacci_datadir']
 
 # We construct land frac using ESA CCI data
 #
