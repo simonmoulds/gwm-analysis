@@ -6,17 +6,30 @@ import os
 
 os.environ["PYTHONPATH"] += os.pathsep + "/usr/lib/grass78/etc/python"
 
-# configfile: config/config.yml
+
+configfile: config/gwm-cvhydro-config.yml
+
 
 rule all:
     input:
-        'results/done/populate_grass_database.done'
+        'results/done/grass_define_regions.done'
 
 
-rule populate_grass_database:
+rule grass_define_region:
     output:
-        touch('results/done/populate_grass_database.done')
+        touch('results/done/grass_define_regions.done')
     conda:
         'envs/conda_environment_grass.yml'
     script:
         "scripts/grass-define-regions.py"
+
+
+rule grass_make_jules_land_frac:
+    input:
+        'results/done/grass_define_regions.done'
+    output:
+        touch('results/done/grass_make_jules_land_frac.done')
+    conda:
+        'envs/conda_environment_grass.yml'
+    script:
+        "scripts/grass-make-jules-land-frac.py"

@@ -1,3 +1,3 @@
-
+esacci_datadir: /var/data/scratch/data/ESA_CCI_LC
 ancil_datadir: /home/sm510/projects/ganges_water_machine_data/wfdei/ancils
 irrigation_datadir: /home/sm510/projects/ganges_water_machine_data/irrigation
