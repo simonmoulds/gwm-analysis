@@ -25,7 +25,10 @@ user = Session()
 user.open(gisdb=my_gisdb, location=my_location, mapset=my_mapset)
 
 # Remove mask if present
-r.mask(flags="r")
+try:
+    r.mask(flags="r")
+except:
+    pass
 
 # We construct land frac using ESA CCI data
 #
