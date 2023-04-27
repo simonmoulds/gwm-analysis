@@ -52,7 +52,8 @@ gdalwarp_command = (
     f'gdalwarp -overwrite -te -180 -90 180 90 -tr {res} {res} '
     f'-r min {input_map} {output_map}'
 )
-subprocess.call(gdalwarp_command)
+# subprocess.call(gdalwarp_command)
+os.system(gdalwarp_command)
 
 # Import the map to our grass session
 r.in_gdal(
