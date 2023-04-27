@@ -17,8 +17,8 @@ STEMS = config['jules']['id_stem']
 HISTORICAL_STEMS = [stem for stem in STEMS if stem != 'JULES_vn6.1_irrig_current']
 
 
-# # This snakefile handles the scripts to process JULES output
-# include: Snakefile_0
+# This snakefile handles the scripts to process JULES output
+include: Snakefile_jules_output
 
 
 rule all:

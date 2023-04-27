@@ -1,0 +1,20 @@
+# Main entrypoint of the workflow.
+# Please follow the best practices:
+# https://snakemake.readthedocs.io/en/stable/snakefiles/best_practices.html,
+# in particular regarding the standardized folder structure mentioned there.
+import os
+
+
+configfile: config/config.yml
+
+
+rule all:
+    input:
+        'results/fig/figure2.png',
+
+
+rule populate_grass_database:
+    output:
+        touch('results/done/populate_grass_database.done')
+    shell:
+        "scripts/populate-grass-db.sh --overwrite"
