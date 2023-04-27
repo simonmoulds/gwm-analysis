@@ -72,7 +72,7 @@ r.mapcalc(
 lc_reference_year = 2015
 input_map = os.path.join(
     esacci_datadir,
-    f'ESACCI-LC-L4-LCCS-Map-300m-P1Y-${lc_reference_year}-v2.0.7.tif'
+    f'ESACCI-LC-L4-LCCS-Map-300m-P1Y-{lc_reference_year}-v2.0.7.tif'
 )
 output_map = f'esacci_lc_{lc_reference_year}'
 r.in_gdal(
