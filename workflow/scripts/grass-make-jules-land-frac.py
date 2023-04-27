@@ -39,15 +39,16 @@ except:
 #      As ocean=0, land=1, inland=2, this means that coarse grid
 #      cells containing any number of fine resolution ocean grid
 #      cells will also be classified as ocean.
+res = 1 / 360.
+rgn_str = f'globe_{res:.6f}Deg'
 input_map = os.path.join(
     esacci_datadir,
     'ESACCI-LC-L4-WB-Ocean-Land-Map-150m-P13Y-2000-v4.0.tif'
 )
 output_map = os.path.join(
     'results/input',
-    'water_bodies_min_${RGN_STR}.tif'
+    f'water_bodies_min_{rgn_str}.tif'
 )
-res = 1 / 360.
 gdalwarp_command = (
     f'gdalwarp -overwrite -te -180 -90 180 90 -tr {res} {res} '
     f'-r min {input_map} {output_map}'
@@ -60,7 +61,6 @@ r.in_gdal(
     flags='a', input=output_map,
     output='water_bodies_min', overwrite=True
 )
-rgn_str = f'globe_{res:.6f}Deg'
 g.region(region=rgn_str)
 r.mapcalc(
     'ocean_min = if(water_bodies_min==0, 1, 0)',
