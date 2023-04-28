@@ -40,7 +40,7 @@ rule make_c4_fraction:
     output:
         touch('results/done/make_c4_fraction.done')
     script:
-        "scripts/make_c4_fraction.R"
+        "scripts/make-c4-fraction.R"
 
 # rule grass_make_jules_frac:
 #     input:
