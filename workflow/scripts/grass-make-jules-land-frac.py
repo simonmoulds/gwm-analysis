@@ -14,6 +14,7 @@ from grass.pygrass.modules.shortcuts import raster as r
 from grass.pygrass.modules.shortcuts import vector as v
 from grass.pygrass.modules.shortcuts import temporal as t
 
+# Directory where ESA CCI LC data is stored
 esacci_datadir = snakemake.config['esacci_datadir']
 
 # Now we can create a grass session instance
@@ -56,7 +57,7 @@ gdalwarp_command = (
 # subprocess.call(gdalwarp_command)
 os.system(gdalwarp_command)
 
-# Import the map to our grass session
+# Import the map to our grass location
 r.in_gdal(
     flags='a', input=output_map,
     output='water_bodies_min', overwrite=True

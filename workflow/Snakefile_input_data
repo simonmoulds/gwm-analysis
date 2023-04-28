@@ -12,7 +12,8 @@ configfile: 'config/gwm-cvhydro-config.yml'
 
 rule all:
     input:
-        'results/done/grass_make_jules_land_frac.done'
+        'results/done/make_c4_fraction.done'
+        # 'results/done/grass_make_jules_land_frac.done'
 
 
 rule grass_define_region:
@@ -33,3 +34,20 @@ rule grass_make_jules_land_frac:
         'envs/conda_environment_grass.yml'
     script:
         "scripts/grass-make-jules-land-frac.py"
+
+
+rule make_c4_fraction:
+    output:
+        touch('results/done/make_c4_fraction.done')
+    script:
+        "scripts/make_c4_fraction.R"
+
+# rule grass_make_jules_frac:
+#     input:
+#         'results/done/grass_make_jules_land_frac.done'
+#     output:
+#         touch('results/done/grass_make_jules_frac.done')
+#     conda:
+#         'envs/conda_environment_grass.yml'
+#     script:
+#         "scripts/grass-make-jules-frac.py"
