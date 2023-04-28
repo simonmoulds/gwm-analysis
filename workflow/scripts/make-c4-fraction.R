@@ -24,7 +24,7 @@ x <- x / 100
 rgns <- c(0.5, 0.25, 0.125, 0.1, 1 / 12, 0.0625, 0.05, 1 / 60, 0.01, 1 / 120)
 rgns_str <- formatC(rgns, digits = 6, format = "f", flag = 0)
 for (i in 1:length(rgns)) {
-  y <- rast(extent = ext(r), resolution = rgns[i])
+  y <- rast(extent = ext(x), resolution = rgns[i])
   fact <- 1 / rgns[i]
   ## The native resolution is coarser than all the resolutions
   ## we are interested in, so we can use disagg
