@@ -133,6 +133,10 @@ for (year in lc_years):
 
     # Rainfed cropland (classes 10, 11)
     g.region(region='igp_0.0027778Deg')
+    rainfed_cropland_map = f'esacci_lc_{year}_rainfed_cropland_igp_0.008333Deg.tif'
+    irrigated_cropland_map = f'esacci_lc_{year}_irrigated_cropland_igp_0.008333Deg.tif'
+    combined_cropland_map = f'esacci_lc_{year}_combined_igp_0.008333Deg.tif'
+
     r.mapcalc(
         f'esacci_lc_{year}_rainfed_cropland.tif = if(({esa_lc} == 10) || ({esa_lc} == 11), 1, 0)',
         overwrite=True
@@ -140,7 +144,7 @@ for (year in lc_years):
     g.region(region='igp_0.008333Deg')
     r.resamp_stats(
         input=f'esacci_lc_{year}_rainfed_cropland.tif',
-        output=f'esacci_lc_{year}_rainfed_cropland_igp_0.008333Deg.tif',
+        output=rainfed_cropland_map,
         method='average',
         overwrite=True
     )
@@ -154,159 +158,95 @@ for (year in lc_years):
     g.region(region='igp_0.008333Deg')
     r.resamp_stats(
         input=f'esacci_lc_{year}_irrigated_cropland.tif',
-        output=f'esacci_lc_{year}_irrigated_cropland_igp_0.008333Deg.tif',
+        output=irrigated_cropland_map,
         method='average',
         overwrite=True
     )
 
     # Combined
     r.mapcalc(
-        f'esacci_lc_{year}_cropland_igp_0.008333Deg.tif = esacci_lc_{year}_rainfed_cropland_igp_0.008333Deg.tif + esacci_lc_{year}_irrigated_cropland_igp_0.008333Deg.tif',
+        f'{combined_cropland_map} = {rainfed_cropland_map} + {irrigated_cropland_map}'
         overwrite=True
     )
 
-    # 5 PFT
-    # tree broadleaf
-    r.mapcalc(
-        'lc_tree_broadleaf_combined_{year}_igp_0.008333Deg.tif = esacci_lc_{year}_tree_broadleaf_evergreen_igp_0.008333Deg + esacci_lc_{year}_tree_broadleaf_deciduous_igp_0.008333Deg',
-        overwrite=True
-    )
+    # Write JULES output - 5 PFT
+    natural_pft = [
+        'tree_broadleaf', 'tree_needleleaf', 'shrub',
+        'urban', 'water', 'bare_soil', 'snow_ice'
+    ]
+    lut_5pft = {
+        'tree_broadleaf': [
+            'tree_broadleaf_evergreen',
+            'tree_broadleaf_deciduous'
+        ],
+        'tree_needleleaf': [
+            'tree_needleleaf_evergreen',
+            'tree_needleleaf_deciduous'
+        ],
+        'shrub': [
+            'shrub_broadleaf_evergreen',
+            'shrub_broadleaf_deciduous',
+            'shrub_needleleaf_evergreen',
+            'shrub_needleleaf_deciduous'
+        ],
+        'urban': ['urban'],
+        'water': ['water'],
+        'bare_soil': ['bare_soil'],
+        'snow_ice': ['snow_ice']
+    }
+    def myfun(pft):
+        combined_map = f'lc_{pft}_combined_{year}_igp_0.008333Deg.tif'
+        natural_map = f'lc_{pft}_natural_{year}_igp_0.008333Deg.tif'
+        rainfed_map = f'lc_{pft}_rainfed_{year}_igp_0.008333Deg.tif'
+        irrigated_map = f'lc_{pft}_irrigated_{year}_igp_0.008333Deg.tif'
+        if pft in natural_pft:
+            parts = lut_5pft[pft]
+            parts = [f'esacci_lc_{year}_{part}_igp_0.008333Deg' for part in parts]
+            r_mapcalc_eqn = f'{combined_map} = ' + ' + '.join(parts)
+            r.mapcalc(r_mapcalc_eqn, overwrite=True)
+            r.mapcalc(f'{natural_map} = {combined_map}', overwrite=True)
+            r.mapcalc(f'{rainfed_map} = 0', overwrite=True)
+            r.mapcalc(f'{irrigated_map} = 0', overwrite=True)
 
-    # TODO and so on
-    # # ===================================================== #
-    # # Convert to JULES land cover types
-    # # ===================================================== #
-    # g.region region=igp_0.008333Deg
-
-    # # ###########
-    # # (i) 5 PFT
-    # # ###########
-
-    # # tree broadleaf
-    # r.mapcalc \
-	# "lc_tree_broadleaf_combined_${YEAR}_igp_0.008333Deg.tif = esacci_lc_${YEAR}_tree_broadleaf_evergreen_igp_0.008333Deg + esacci_lc_${YEAR}_tree_broadleaf_deciduous_igp_0.008333Deg" \
-	# $OVERWRITE
-    # r.mapcalc \
-	# "lc_tree_broadleaf_natural_${YEAR}_igp_0.008333Deg.tif = lc_tree_broadleaf_combined_${YEAR}_igp_0.008333Deg.tif" \
-	# $OVERWRITE
-    # r.mapcalc \
-	# "lc_tree_broadleaf_rainfed_${YEAR}_igp_0.008333Deg.tif = 0" \
-	# $OVERWRITE
-    # r.mapcalc \
-	# "lc_tree_broadleaf_irrigated_${YEAR}_igp_0.008333Deg.tif = 0" \
-	# $OVERWRITE
-
-    # # tree needleleaf
-    # r.mapcalc \
-	# "lc_tree_needleleaf_combined_${YEAR}_igp_0.008333Deg.tif = esacci_lc_${YEAR}_tree_needleleaf_evergreen_igp_0.008333Deg + esacci_lc_${YEAR}_tree_needleleaf_deciduous_igp_0.008333Deg" \
-	# $OVERWRITE
-    # r.mapcalc \
-	# "lc_tree_needleleaf_natural_${YEAR}_igp_0.008333Deg.tif = lc_tree_needleleaf_combined_${YEAR}_igp_0.008333Deg.tif" \
-	# $OVERWRITE
-    # r.mapcalc \
-	# "lc_tree_needleleaf_rainfed_${YEAR}_igp_0.008333Deg.tif = 0" \
-	# $OVERWRITE
-    # r.mapcalc \
-	# "lc_tree_needleleaf_irrigated_${YEAR}_igp_0.008333Deg.tif = 0" \
-	# $OVERWRITE
-
-    # # shrub
-    # r.mapcalc \
-	# "lc_shrub_combined_${YEAR}_igp_0.008333Deg.tif = esacci_lc_${YEAR}_shrub_broadleaf_evergreen_igp_0.008333Deg + esacci_lc_${YEAR}_shrub_broadleaf_deciduous_igp_0.008333Deg + esacci_lc_${YEAR}_shrub_needleleaf_evergreen_igp_0.008333Deg + esacci_lc_${YEAR}_shrub_needleleaf_deciduous_igp_0.008333Deg" \
-	# $OVERWRITE
-    # r.mapcalc \
-	# "lc_shrub_natural_${YEAR}_igp_0.008333Deg.tif = lc_shrub_combined_${YEAR}_igp_0.008333Deg.tif" \
-	# $OVERWRITE
-    # r.mapcalc \
-	# "lc_shrub_rainfed_${YEAR}_igp_0.008333Deg.tif = 0" \
-	# $OVERWRITE
-    # r.mapcalc \
-	# "lc_shrub_irrigated_${YEAR}_igp_0.008333Deg.tif = 0" \
-	# $OVERWRITE
-
-    # # c4 grass
-    # r.mapcalc \
-	# "lc_c4_grass_combined_${YEAR}_igp_0.008333Deg.tif = (esacci_lc_${YEAR}_natural_grass_igp_0.008333Deg * c4_nat_veg_frac_globe_0.008333Deg) + (esacci_lc_${YEAR}_managed_grass_igp_0.008333Deg * c4_crop_frac_globe_0.008333Deg)" \
-	# $OVERWRITE
-    # r.mapcalc \
-	# "lc_c4_grass_natural_${YEAR}_igp_0.008333Deg.tif = lc_c4_grass_combined_${YEAR}_igp_0.008333Deg.tif - (esacci_lc_${YEAR}_cropland_igp_0.008333Deg.tif * c4_crop_frac_globe_0.008333Deg)" \
-	# $OVERWRITE
-    # r.mapcalc \
-	# "lc_c4_grass_rainfed_${YEAR}_igp_0.008333Deg.tif = (esacci_lc_${YEAR}_rainfed_cropland_igp_0.008333Deg.tif * c4_crop_frac_globe_0.008333Deg)" \
-	# $OVERWRITE
-    # r.mapcalc \
-	# "lc_c4_grass_irrigated_${YEAR}_igp_0.008333Deg.tif = (esacci_lc_${YEAR}_irrigated_cropland_igp_0.008333Deg.tif * c4_crop_frac_globe_0.008333Deg)" \
-	# $OVERWRITE
-
-    # # c3 grass
-    # r.mapcalc \
-	# "lc_c3_grass_combined_${YEAR}_igp_0.008333Deg.tif = (esacci_lc_${YEAR}_natural_grass_igp_0.008333Deg * (1-c4_nat_veg_frac_globe_0.008333Deg)) + (esacci_lc_${YEAR}_managed_grass_igp_0.008333Deg * (1-c4_crop_frac_globe_0.008333Deg))" \
-	# $OVERWRITE
-    # r.mapcalc \
-	# "lc_c3_grass_natural_${YEAR}_igp_0.008333Deg.tif = lc_c3_grass_combined_${YEAR}_igp_0.008333Deg.tif - (esacci_lc_${YEAR}_cropland_igp_0.008333Deg.tif * (1-c4_crop_frac_globe_0.008333Deg))" \
-	# $OVERWRITE
-    # r.mapcalc \
-	# "lc_c3_grass_rainfed_${YEAR}_igp_0.008333Deg.tif = (esacci_lc_${YEAR}_rainfed_cropland_igp_0.008333Deg.tif * (1-c4_crop_frac_globe_0.008333Deg))" \
-	# $OVERWRITE
-    # r.mapcalc \
-	# "lc_c3_grass_irrigated_${YEAR}_igp_0.008333Deg.tif = (esacci_lc_${YEAR}_irrigated_cropland_igp_0.008333Deg.tif * (1-c4_crop_frac_globe_0.008333Deg))" \
-	# $OVERWRITE
-
-    # # urban
-    # r.mapcalc \
-	# "lc_urban_combined_${YEAR}_igp_0.008333Deg.tif = esacci_lc_${YEAR}_urban_igp_0.008333Deg" \
-	# $OVERWRITE
-    # r.mapcalc \
-	# "lc_urban_natural_${YEAR}_igp_0.008333Deg.tif = lc_urban_combined_${YEAR}_igp_0.008333Deg.tif" \
-	# $OVERWRITE
-    # r.mapcalc \
-	# "lc_urban_rainfed_${YEAR}_igp_0.008333Deg.tif = 0" \
-	# $OVERWRITE
-    # r.mapcalc \
-	# "lc_urban_irrigated_${YEAR}_igp_0.008333Deg.tif = 0" \
-	# $OVERWRITE
-
-    # # water
-    # r.mapcalc \
-	# "lc_water_combined_${YEAR}_igp_0.008333Deg.tif = esacci_lc_${YEAR}_water_igp_0.008333Deg" \
-	# $OVERWRITE
-    # r.mapcalc \
-	# "lc_water_natural_${YEAR}_igp_0.008333Deg.tif = lc_water_combined_${YEAR}_igp_0.008333Deg.tif" \
-	# $OVERWRITE
-    # r.mapcalc \
-	# "lc_water_rainfed_${YEAR}_igp_0.008333Deg.tif = 0" \
-	# $OVERWRITE
-    # r.mapcalc \
-	# "lc_water_irrigated_${YEAR}_igp_0.008333Deg.tif = 0" \
-	# $OVERWRITE
-
-    # # bare soil
-    # r.mapcalc \
-	# "lc_bare_soil_combined_${YEAR}_igp_0.008333Deg.tif = esacci_lc_${YEAR}_bare_soil_igp_0.008333Deg" \
-	# $OVERWRITE
-    # r.mapcalc \
-	# "lc_bare_soil_natural_${YEAR}_igp_0.008333Deg.tif = lc_bare_soil_combined_${YEAR}_igp_0.008333Deg.tif" \
-	# $OVERWRITE
-    # r.mapcalc \
-	# "lc_bare_soil_rainfed_${YEAR}_igp_0.008333Deg.tif = 0" \
-	# $OVERWRITE
-    # r.mapcalc \
-	# "lc_bare_soil_irrigated_${YEAR}_igp_0.008333Deg.tif = 0" \
-	# $OVERWRITE
-
-    # # snow/ice
-    # r.mapcalc \
-	# "lc_snow_ice_combined_${YEAR}_igp_0.008333Deg.tif = esacci_lc_${YEAR}_snow_ice_igp_0.008333Deg" \
-	# $OVERWRITE
-    # r.mapcalc \
-	# "lc_snow_ice_natural_${YEAR}_igp_0.008333Deg.tif = lc_snow_ice_combined_${YEAR}_igp_0.008333Deg.tif" \
-	# $OVERWRITE
-    # r.mapcalc \
-	# "lc_snow_ice_rainfed_${YEAR}_igp_0.008333Deg.tif = 0" \
-	# $OVERWRITE
-    # r.mapcalc \
-	# "lc_snow_ice_irrigated_${YEAR}_igp_0.008333Deg.tif = 0" \
-	# $OVERWRITE
+        if pft in ['c4_grass', 'c3_grass']:
+            natural_grass_map = f'esacci_lc_{year}_natural_grass_igp_0.008333Deg'
+            managed_grass_map = f'esacci_lc_{year}_managed_grass_igp_0.008333Deg'
+            c4_nat_veg_frac_map = f'c4_nat_veg_frac_globe_0.008333Deg'
+            c4_crop_frac_map = f'c4_crop_frac_globe_0.008333Deg'
+            if pft == 'c4_grass':
+                r.mapcalc(
+                    f'{combined_map} = ({natural_grass_map} * {c4_nat_veg_frac_map}) + ({managed_grass_map} * {c4_crop_frac_map})',
+                    overwrite=True
+                )
+                r.mapcalc(
+                    f'{natural_map} = {combined_map} - ({combined_cropland_map} * {c4_crop_frac_map}',
+                    overwrite=True
+                )
+                r.mapcalc(
+                    f'{rainfed_map} = {rainfed_cropland_map} * {c4_crop_frac_map}',
+                    overwrite=True
+                )
+                r.mapalc(
+                    f'{irrigated_map} = {irrigated_cropland_map} * {c4_crop_frac_map}',
+                    overwrite=True
+                )
+            else:
+                r.mapcalc(
+                    f'{combined_map} = ({natural_grass_map} * (1 - {c4_nat_veg_frac_map})) + ({managed_grass_map} * (1 - {c4_crop_frac_map}))',
+                    overwrite=True
+                )
+                r.mapcalc(
+                    f'{natural_map} = {combined_map} - ({combined_cropland_map} * (1 - {c4_crop_frac_map}))',
+                    overwrite=True
+                )
+                r.mapcalc(
+                    f'{rainfed_map} = {rainfed_cropland_map} * (1 - {c4_crop_frac_map})',
+                    overwrite=True
+                )
+                r.mapalc(
+                    f'{irrigated_map} = {irrigated_cropland_map} * (1 - {c4_crop_frac_map})',
+                    overwrite=True
+                )
 
     # # # weighted elevation
     # # for LC in tree_broadleaf tree_needleleaf shrub c4_grass c3_grass urban water bare_soil snow_ice
@@ -320,6 +260,15 @@ for (year in lc_years):
     # # (ii) 9 PFT
     # # ############
 
+    # 9 PFT - tree and shrubs are different
+    tree_broadleaf_evergreen_map
+    tree_broadleaf_evergreen_tropical_map
+    tree_broadleaf_evergreen_temperate_map
+    tropical_broadleaf_forest_frac_map
+
+    r.mapcalc(
+        f'lc_tree_broadleaf_evergreen_tropical_combined_{year}_igp_0.008333Deg.tif'
+    )
     # # tree broadleaf evergreen tropical
     # r.mapcalc \
 	# "lc_tree_broadleaf_evergreen_tropical_combined_${YEAR}_igp_0.008333Deg.tif = esacci_lc_${YEAR}_tree_broadleaf_evergreen_igp_0.008333Deg * tropical_broadleaf_forest_globe_0.008333Deg" \
