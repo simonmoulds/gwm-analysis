@@ -1,0 +1,24 @@
+name: grass_gis
+channels:
+  - defaults
+dependencies:
+  - bzip2
+  - ca-certificates
+  - certifi
+  - libcxx
+  - libffi
+  - ncurses
+  - openssl
+  - pip
+  - python=3
+  - readline
+  - setuptools
+  - sqlite
+  - tk
+  - tzdata
+  - wheel
+  - xz
+  - zlib
+  - pip:
+    - grass-session
+    - six
