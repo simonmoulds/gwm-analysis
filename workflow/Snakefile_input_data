@@ -12,7 +12,8 @@ configfile: 'config/gwm-cvhydro-config.yml'
 
 rule all:
     input:
-        'results/done/make_c4_fraction.done'
+        # 'results/done/make_c4_fraction.done'
+        'results/done/grass_make_jules_frac.done'
         # 'results/done/grass_make_jules_land_frac.done'
 
 
@@ -45,7 +46,8 @@ rule make_c4_fraction:
 
 rule grass_make_jules_frac:
     input:
-        'results/done/grass_make_jules_land_frac.done'
+        'results/done/grass_make_jules_land_frac.done',
+        'results/done/make_c4_fraction.done'
     output:
         touch('results/done/grass_make_jules_frac.done')
     conda:
