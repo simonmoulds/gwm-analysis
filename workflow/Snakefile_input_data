@@ -42,12 +42,13 @@ rule make_c4_fraction:
     script:
         "scripts/make-c4-fraction.R"
 
-# rule grass_make_jules_frac:
-#     input:
-#         'results/done/grass_make_jules_land_frac.done'
-#     output:
-#         touch('results/done/grass_make_jules_frac.done')
-#     conda:
-#         'envs/conda_environment_grass.yml'
-#     script:
-#         "scripts/grass-make-jules-frac.py"
+
+rule grass_make_jules_frac:
+    input:
+        'results/done/grass_make_jules_land_frac.done'
+    output:
+        touch('results/done/grass_make_jules_frac.done')
+    conda:
+        'envs/conda_environment_grass.yml'
+    script:
+        "scripts/grass-make-jules-frac.py"
