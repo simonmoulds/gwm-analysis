@@ -19,6 +19,11 @@ from constants import (esa_land_covers,
                        jules_land_covers,
                        jules_land_cover_components)
 
+# Create output directory for maps
+wd = os.getcwd()
+outputdir = os.path.join(wd, 'results/intermediate/frac')
+os.makedirs(outputdir, exist_ok=True)
+
 # Write the reclass rules that we need
 write_reclass_rules()
 
@@ -38,8 +43,13 @@ try:
 except:
     pass
 
+try:
+    r.external_out(flags="r")
+except:
+    pass
+
 # Import tropical forest area and infill
-input_map = 'resources/wwf_terr_ecos.shp'
+input_map = 'resources/official/wwf_terr_ecos.shp'
 output_map = 'results/intermediate/wwf_terr_ecos_globe_0.008333Deg.tif'
 gdal_rasterize_command = (
     'gdal_rasterize -at -te -180 -90 180 90 -ts 43200 21600 -a BIOME '
@@ -56,7 +66,8 @@ r.grow_distance(
     overwrite=True
 )
 r.mapcalc(
-    f'tropical_broadleaf_forest_globe_0.008333Deg = if(({grass_input_map}_interp == 1) | ({grass_input_map}_interp == 2), 1, 0)'
+    f'tropical_broadleaf_forest_globe_0.008333Deg = if(({grass_input_map}_interp == 1) | ({grass_input_map}_interp == 2), 1, 0)',
+    overwrite=True
 )
 
 # Read C4 fraction data
@@ -82,7 +93,7 @@ r.mask(raster='esacci_land_frac_globe_0.002778Deg')
 r.mapcalc('land_sea_mask = esacci_land_frac_globe_0.002778Deg', overwrite=True)
 r.mask(flags='r')
 
-for (year in lc_years):
+for year in lc_years:
     g.region(region='igp_0.002778Deg')
     input_map = os.path.join(
         esacci_datadir,
@@ -122,43 +133,43 @@ for (year in lc_years):
             overwrite=True
         )
 
-    # Set up external output - this is more memory efficient
-    r.external_out(
-        directory='results/intermediate/frac',
-	    format='GTiff', options='COMPRESS=DEFLATE'
-    )
+    # # Set up external output - this is more memory efficient
+    # r.external_out(
+    #     directory='results/intermediate/frac',
+    #     format='GTiff', options='COMPRESS=DEFLATE'
+    # )
 
     # ############################################################### #
     # Additional agricultural land cover classes
     # ############################################################### #
 
     # Rainfed cropland (classes 10, 11)
-    g.region(region='igp_0.0027778Deg')
-    rainfed_cropland_map = f'esacci_lc_{year}_rainfed_cropland_igp_0.008333Deg.tif'
-    irrigated_cropland_map = f'esacci_lc_{year}_irrigated_cropland_igp_0.008333Deg.tif'
-    combined_cropland_map = f'esacci_lc_{year}_combined_igp_0.008333Deg.tif'
+    g.region(region='igp_0.002778Deg')
+    rainfed_cropland_map = f'esacci_lc_{year}_rainfed_cropland_igp_0.008333Deg'
+    irrigated_cropland_map = f'esacci_lc_{year}_irrigated_cropland_igp_0.008333Deg'
+    combined_cropland_map = f'esacci_lc_{year}_combined_igp_0.008333Deg'
 
     r.mapcalc(
-        f'esacci_lc_{year}_rainfed_cropland.tif = if(({esa_lc} == 10) || ({esa_lc} == 11), 1, 0)',
+        f'esacci_lc_{year}_rainfed_cropland = if(({esa_lc} == 10) || ({esa_lc} == 11), 1, 0)',
         overwrite=True
     )
     g.region(region='igp_0.008333Deg')
     r.resamp_stats(
-        input=f'esacci_lc_{year}_rainfed_cropland.tif',
+        input=f'esacci_lc_{year}_rainfed_cropland',
         output=rainfed_cropland_map,
         method='average',
         overwrite=True
     )
 
     # Irrigated cropland (class 20)
-    g.region(region='igp_0.0027778Deg')
+    g.region(region='igp_0.002778Deg')
     r.mapcalc(
-        f'esacci_lc_{year}_irrigated_cropland.tif = if(({esa_lc} == 20), 1, 0)',
+        f'esacci_lc_{year}_irrigated_cropland = if(({esa_lc} == 20), 1, 0)',
         overwrite=True
     )
     g.region(region='igp_0.008333Deg')
     r.resamp_stats(
-        input=f'esacci_lc_{year}_irrigated_cropland.tif',
+        input=f'esacci_lc_{year}_irrigated_cropland',
         output=irrigated_cropland_map,
         method='average',
         overwrite=True
@@ -166,7 +177,7 @@ for (year in lc_years):
 
     # Combined (rainfed + irrigated)
     r.mapcalc(
-        f'{combined_cropland_map} = {rainfed_cropland_map} + {irrigated_cropland_map}'
+        f'{combined_cropland_map} = {rainfed_cropland_map} + {irrigated_cropland_map}',
         overwrite=True
     )
 
@@ -175,10 +186,10 @@ for (year in lc_years):
     # ############################################################### #
 
     for lc in jules_land_covers:
-        combined_map = f'lc_{lc}_combined_{year}_igp_0.008333Deg.tif'
-        natural_map = f'lc_{lc}_natural_{year}_igp_0.008333Deg.tif'
-        rainfed_map = f'lc_{lc}_rainfed_{year}_igp_0.008333Deg.tif'
-        irrigated_map = f'lc_{lc}_irrigated_{year}_igp_0.008333Deg.tif'
+        combined_map = f'lc_{lc}_combined_{year}_igp_0.008333Deg'
+        natural_map = f'lc_{lc}_natural_{year}_igp_0.008333Deg'
+        rainfed_map = f'lc_{lc}_rainfed_{year}_igp_0.008333Deg'
+        irrigated_map = f'lc_{lc}_irrigated_{year}_igp_0.008333Deg'
 
         if lc in ['c4_grass', 'c3_grass']:
             # Here we divide C3/C4 grass into rainfed/irrigated/natural C3/C4 grass
@@ -192,14 +203,14 @@ for (year in lc_years):
                     overwrite=True
                 )
                 r.mapcalc(
-                    f'{natural_map} = {combined_map} - ({combined_cropland_map} * {c4_crop_frac_map}',
+                    f'{natural_map} = {combined_map} - ({combined_cropland_map} * {c4_crop_frac_map})',
                     overwrite=True
                 )
                 r.mapcalc(
                     f'{rainfed_map} = {rainfed_cropland_map} * {c4_crop_frac_map}',
                     overwrite=True
                 )
-                r.mapalc(
+                r.mapcalc(
                     f'{irrigated_map} = {irrigated_cropland_map} * {c4_crop_frac_map}',
                     overwrite=True
                 )
@@ -216,19 +227,21 @@ for (year in lc_years):
                     f'{rainfed_map} = {rainfed_cropland_map} * (1 - {c4_crop_frac_map})',
                     overwrite=True
                 )
-                r.mapalc(
+                r.mapcalc(
                     f'{irrigated_map} = {irrigated_cropland_map} * (1 - {c4_crop_frac_map})',
                     overwrite=True
                 )
 
-        if lc in ['tree_broadleaf_evergreen_tropical', 'tree_broadleaf_evergreen_temperate']:
+        elif lc in ['tree_broadleaf_evergreen_tropical', 'tree_broadleaf_evergreen_temperate']:
             if lc == 'tree_broadleaf_evergreen_tropical':
                 r.mapcalc(
-                    f'{combined_map} = esacci_lc_{year}_tree_broadleaf_evergreen_igp_0.008333Deg * tropical_broadleaf_forest_globe_0.008333Deg'
+                    f'{combined_map} = esacci_lc_{year}_tree_broadleaf_evergreen_igp_0.008333Deg * tropical_broadleaf_forest_globe_0.008333Deg',
+                    overwrite=True
                 )
             else:
                 r.mapcalc(
-                    f'{combined_map} = esacci_lc_{year}_tree_broadleaf_evergreen_temperate * (1 - tropical_broadleaf_forest_globe_0.008333Deg)'
+                    f'{combined_map} = esacci_lc_{year}_tree_broadleaf_evergreen_igp_0.008333Deg * (1 - tropical_broadleaf_forest_globe_0.008333Deg)',
+                    overwrite=True
                 )
 
             r.mapcalc(f'{natural_map} = {combined_map}', overwrite=True)
@@ -244,7 +257,11 @@ for (year in lc_years):
             r.mapcalc(f'{rainfed_map} = 0', overwrite=True)
             r.mapcalc(f'{irrigated_map} = 0', overwrite=True)
 
-    # Turn off external output
-    r.external_out(flags="r")
-
-
+        # Write output maps
+        for map in [combined_map, natural_map, rainfed_map, irrigated_map]:
+            r.out_gdal(
+                input=map, 
+                output=os.path.join(outputdir, map + '.tif'),
+                createopt="COMPRESS=LZW",
+                overwrite=True
+            )
