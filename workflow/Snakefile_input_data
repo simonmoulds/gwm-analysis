@@ -12,7 +12,7 @@ configfile: 'config/gwm-cvhydro-config.yml'
 
 rule all:
     input:
-        'results/done/grass_make_jules_frac.done'
+        'results/done/grass_define_igp_region.done'
 
 
 rule grass_define_region:
