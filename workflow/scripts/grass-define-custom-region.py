@@ -13,15 +13,6 @@ from grass.pygrass.modules.shortcuts import raster as r
 from grass.pygrass.modules.shortcuts import vector as v
 from grass.pygrass.modules.shortcuts import temporal as t
 
-# Copied from another workflow, as reminder of how to access snakemake constants
-# station_file = snakemake.input['stations']
-# station = int(snakemake.wildcards['stn'])
-# # init_month = int(snakemake.wildcards['init_month'])
-# lead_time = int(snakemake.wildcards['lead_time'])
-# # season = snakemake.wildcards['season']
-# test_period_start = snakemake.config['modelling']['random_forest']['test_start']
-# test_period_end = snakemake.config['modelling']['random_forest']['test_end']
-
 # Now we can create a grass session instance
 my_gisdb = os.path.join(os.getenv('HOME'), 'grassdata')
 my_location = 'latlong'
