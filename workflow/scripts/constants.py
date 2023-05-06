@@ -33,9 +33,19 @@ jules_9pft_only = [lc for lc in jules_9pft if lc not in jules_common_pft]
 jules_5pft_only = [lc for lc in jules_5pft if lc not in jules_common_pft]
 
 jules_land_covers = (
+    jules_common_pft +
     jules_5pft_only +
     jules_9pft_only +
-    jules_common_pft +
+    ['urban', 'water', 'bare_soil', 'snow_ice']
+)
+
+jules_9pft_land_covers = (
+    jules_9pft +
+    ['urban', 'water', 'bare_soil', 'snow_ice']
+)
+
+jules_5pft_land_covers = (
+    jules_5pft +
     ['urban', 'water', 'bare_soil', 'snow_ice']
 )
 
