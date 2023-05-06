@@ -181,6 +181,14 @@ for year in lc_years:
         overwrite=True
     )
 
+    for map in [combined_cropland_map, rainfed_cropland_map, irrigated_cropland_map]:
+        r.out_gdal(
+            input=map,
+            output=os.path.join(outputdir, map + '.tif'),
+            createopt="COMPRESS=LZW",
+            overwrite=True
+        )
+
     # ############################################################### #
     # Write JULES land cover maps
     # ############################################################### #
