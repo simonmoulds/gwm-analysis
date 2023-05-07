@@ -1,0 +1,324 @@
+,STATE.x,DIST.x,STATE.y,DIST.y
+1,Andhra Pradesh,Adilabad,Andhra Pradesh,Adilabad
+2,Andhra Pradesh,Anantapur,NA,NA
+3,Andhra Pradesh,Chittoor,Andhra Pradesh,Chittoor
+4,Andhra Pradesh,Cuddapah,NA,NA
+5,Andhra Pradesh,East Godavari,Andhra Pradesh,East Godavari
+6,Andhra Pradesh,Guntur,Andhra Pradesh,Guntur
+7,Andhra Pradesh,Hyderabad,Andhra Pradesh,Hyderabad
+8,Andhra Pradesh,Karimnagar,Andhra Pradesh,Karimnagar
+9,Andhra Pradesh,Khammam,Andhra Pradesh,Khammam
+10,Andhra Pradesh,Krishna,Andhra Pradesh,Krishna
+11,Andhra Pradesh,Kurnool,Andhra Pradesh,Kurnool
+12,Andhra Pradesh,Mahbubnagar,NA,NA
+13,Andhra Pradesh,Medak,Andhra Pradesh,Medak
+14,Andhra Pradesh,Nalgonda,Andhra Pradesh,Nalgonda
+15,Andhra Pradesh,Nellore,NA,NA
+16,Andhra Pradesh,Nizamabad,Andhra Pradesh,Nizamabad
+17,Andhra Pradesh,Prakasam,NA,NA
+18,Andhra Pradesh,Srikakulam,Andhra Pradesh,Srikakulam
+19,Andhra Pradesh,Vishakhapatnam,NA,NA
+20,Andhra Pradesh,Warangal,Andhra Pradesh,Warangal
+21,Andhra Pradesh,West Godavari,Andhra Pradesh,West Godavari
+22,Assam,Cachar,Assam,Cachar
+23,Assam,Darrang,Assam,Darrang
+24,Assam,Garo Hills,NA,NA
+25,Assam,Goalpara,Assam,Goalpara
+26,Assam,Kameng,NA,NA
+27,Assam,Kamrup,Assam,Kamrup
+28,Assam,Lakhimpur,Assam,Lakhimpur
+29,Assam,Lohit,NA,NA
+30,Assam,Mikir Hills,NA,NA
+31,Assam,Mizo Hills,NA,NA
+32,Assam,Nagaon,Assam,Nagaon
+33,Assam,North Cachar Hills,NA,NA
+34,Assam,Siang,NA,NA
+35,Assam,Sibsagar,Assam,Sibsagar
+36,Assam,Subansiri,NA,NA
+37,Assam,Tirap,NA,NA
+38,Assam,United Khasi and Jaintia Hills,NA,NA
+39,Bihar,Bhagalpur,Bihar,Bhagalpur
+40,Bihar,Champaran,Bihar,Champaran
+41,Bihar,Darbhanga,Bihar,Darbhanga
+42,Bihar,Dhanbad,Bihar,Dhanbad
+43,Bihar,Gaya,Bihar,Gaya
+44,Bihar,Hazaribagh,Bihar,Hazaribagh
+45,Bihar,Munger,NA,NA
+46,Bihar,Muzaffarpur,Bihar,Muzaffarpur
+47,Bihar,Palamu,NA,NA
+48,Bihar,Patna,Bihar,Patna
+49,Bihar,Purnia,NA,NA
+50,Bihar,Ranchi,Bihar,Ranchi
+51,Bihar,Saharsa,Bihar,Saharsa
+52,Bihar,Santhal Pargana,NA,NA
+53,Bihar,Saran,Bihar,Saran
+54,Bihar,Shahabad,NA,NA
+55,Bihar,Singhbhum,Bihar,Singhbhum
+56,Gujarat,Ahmadabad,NA,NA
+57,Gujarat,Amreli,Gujarat,Amreli
+58,Gujarat,Banas Kantha,NA,NA
+59,Gujarat,Bharuch,Gujarat,Bharuch
+60,Gujarat,Bhavnagar,Gujarat,Bhavnagar
+61,Gujarat,Gandhinagar,NA,NA
+62,Gujarat,Jamnagar,Gujarat,Jamnagar
+63,Gujarat,Junagadh,Gujarat,Junagadh
+64,Gujarat,Kachchh,NA,NA
+65,Gujarat,Kheda,Gujarat,Kheda
+66,Gujarat,Mahesana,NA,NA
+67,Gujarat,Panch Mahals,NA,NA
+68,Gujarat,Rajkot,Gujarat,Rajkot
+69,Gujarat,Sabar Kantha,NA,NA
+70,Gujarat,Surat,Gujarat,Surat
+71,Gujarat,Surendranagar,Gujarat,Surendranagar
+72,Gujarat,The Dangs,NA,NA
+73,Gujarat,Vadodara,NA,NA
+74,Gujarat,Valsad,Gujarat,Valsad
+75,Haryana,Ambala,Haryana,Ambala
+76,Haryana,Gurgaon,Haryana,Gurgaon
+77,Haryana,Hisar,NA,NA
+78,Haryana,Jind,Haryana,Jind
+79,Haryana,Karnal,Haryana,Karnal
+80,Haryana,Mahendragarh,NA,NA
+81,Haryana,Rohtak,Haryana,Rohtak
+82,Himachal Pradesh,Bilaspur,NA,NA
+83,Himachal Pradesh,Chamba,Himachal Pradesh,Chamba
+84,Himachal Pradesh,Kangra,Himachal Pradesh,Kangra
+85,Himachal Pradesh,Kinnaur,Himachal Pradesh,Kinnaur
+86,Himachal Pradesh,Kullu,Himachal Pradesh,Kullu
+87,Himachal Pradesh,Lahul and Spiti,NA,NA
+88,Himachal Pradesh,Mahasu,NA,NA
+89,Himachal Pradesh,Mandi,Himachal Pradesh,Mandi
+90,Himachal Pradesh,Simla,NA,NA
+91,Himachal Pradesh,Sirmaur,Himachal Pradesh,Sirmaur
+92,Kerala,Alleppey,NA,NA
+93,Kerala,Calicut,NA,NA
+94,Kerala,Cannanore,NA,NA
+95,Kerala,Ernakulam,NA,NA
+96,Kerala,Kottayam,Kerala,Kottayam
+97,Kerala,Palghat,NA,NA
+98,Kerala,Quilon,NA,NA
+99,Kerala,Trichur,NA,NA
+100,Kerala,Trivandrum,NA,NA
+101,Madhya Pradesh,Balaghat,Madhya Pradesh,Balaghat
+102,Madhya Pradesh,Bastar,Madhya Pradesh,Bastar
+103,Madhya Pradesh,Betul,Madhya Pradesh,Betul
+104,Madhya Pradesh,Bhind,Madhya Pradesh,Bhind
+105,Madhya Pradesh,Bilaspur,Madhya Pradesh,Bilaspur
+106,Madhya Pradesh,Chhatarpur,Madhya Pradesh,Chhatarpur
+107,Madhya Pradesh,Chhindwara,Madhya Pradesh,Chhindwara
+108,Madhya Pradesh,Damoh,Madhya Pradesh,Damoh
+109,Madhya Pradesh,Datia,Madhya Pradesh,Datia
+110,Madhya Pradesh,Dewas,Madhya Pradesh,Dewas
+111,Madhya Pradesh,Dhar,Madhya Pradesh,Dhar
+112,Madhya Pradesh,Durg,Madhya Pradesh,Durg
+113,Madhya Pradesh,East Nimar,NA,NA
+114,Madhya Pradesh,Guna,Madhya Pradesh,Guna
+115,Madhya Pradesh,Gwalior,Madhya Pradesh,Gwalior
+116,Madhya Pradesh,Hoshangabad,Madhya Pradesh,Hoshangabad
+117,Madhya Pradesh,Indore,Madhya Pradesh,Indore
+118,Madhya Pradesh,Jabalpur,Madhya Pradesh,Jabalpur
+119,Madhya Pradesh,Jhabua,Madhya Pradesh,Jhabua
+120,Madhya Pradesh,Mandla,Madhya Pradesh,Mandla
+121,Madhya Pradesh,Mandsaur,Madhya Pradesh,Mandsaur
+122,Madhya Pradesh,Morena,Madhya Pradesh,Morena
+123,Madhya Pradesh,Narsinghpur,Madhya Pradesh,Narsinghpur
+124,Madhya Pradesh,Panna,Madhya Pradesh,Panna
+125,Madhya Pradesh,Raigarh,Madhya Pradesh,Raigarh
+126,Madhya Pradesh,Raipur,Madhya Pradesh,Raipur
+127,Madhya Pradesh,Raisen,Madhya Pradesh,Raisen
+128,Madhya Pradesh,Rajgarh,Madhya Pradesh,Rajgarh
+129,Madhya Pradesh,Ratlam,Madhya Pradesh,Ratlam
+130,Madhya Pradesh,Rewa,Madhya Pradesh,Rewa
+131,Madhya Pradesh,Sagar,Madhya Pradesh,Sagar
+132,Madhya Pradesh,Satna,Madhya Pradesh,Satna
+133,Madhya Pradesh,Sehore,Madhya Pradesh,Sehore
+134,Madhya Pradesh,Seoni,NA,NA
+135,Madhya Pradesh,Shahdol,Madhya Pradesh,Shahdol
+136,Madhya Pradesh,Shajapur,Madhya Pradesh,Shajapur
+137,Madhya Pradesh,Shivpuri,Madhya Pradesh,Shivpuri
+138,Madhya Pradesh,Sidhi,Madhya Pradesh,Sidhi
+139,Madhya Pradesh,Surguja,Madhya Pradesh,Surguja
+140,Madhya Pradesh,Tikamgarh,Madhya Pradesh,Tikamgarh
+141,Madhya Pradesh,Ujjain,Madhya Pradesh,Ujjain
+142,Madhya Pradesh,Vidisha,Madhya Pradesh,Vidisha
+143,Madhya Pradesh,West Nimar,NA,NA
+144,Maharashtra,Ahmednagar,Maharashtra,Ahmednagar
+145,Maharashtra,Akola,Maharashtra,Akola
+146,Maharashtra,Amravati,NA,NA
+147,Maharashtra,Aurangabad,Maharashtra,Aurangabad
+148,Maharashtra,Bhandara,Maharashtra,Bhandara
+149,Maharashtra,Bid,NA,NA
+150,Maharashtra,Buldana,NA,NA
+151,Maharashtra,Chandrapur,Maharashtra,Chandrapur
+152,Maharashtra,Dhule,Maharashtra,Dhule
+153,Maharashtra,Greater Bombay,NA,NA
+154,Maharashtra,Jalgaon,Maharashtra,Jalgaon
+155,Maharashtra,Kolhapur,Maharashtra,Kolhapur
+156,Maharashtra,Nagpur,Maharashtra,Nagpur
+157,Maharashtra,Nanded,Maharashtra,Nanded
+158,Maharashtra,Nashik,NA,NA
+159,Maharashtra,Osmanabad,Maharashtra,Osmanabad
+160,Maharashtra,Parbhani,Maharashtra,Parbhani
+161,Maharashtra,Pune,Maharashtra,Pune
+162,Maharashtra,Raigarh,NA,NA
+163,Maharashtra,Ratnagiri,Maharashtra,Ratnagiri
+164,Maharashtra,Sangli,Maharashtra,Sangli
+165,Maharashtra,Satara,Maharashtra,Satara
+166,Maharashtra,Solapur,Maharashtra,Solapur
+167,Maharashtra,Thane,Maharashtra,Thane
+168,Maharashtra,Wardha,Maharashtra,Wardha
+169,Maharashtra,Yavatmal,NA,NA
+170,Mysore,Bangalore,Mysore,Bangalore
+171,Mysore,Belgaum,Mysore,Belgaum
+172,Mysore,Bellary,Mysore,Bellary
+173,Mysore,Bidar,Mysore,Bidar
+174,Mysore,Bijapur,NA,NA
+175,Mysore,Chikmagalur,NA,NA
+176,Mysore,Chitradurga,Mysore,Chitradurga
+177,Mysore,Dakshin Kannad,NA,NA
+178,Mysore,Dharwad,Mysore,Dharwad
+179,Mysore,Gulbarga,NA,NA
+180,Mysore,Hassan,Mysore,Hassan
+181,Mysore,Kodagu,NA,NA
+182,Mysore,Kolar,Mysore,Kolar
+183,Mysore,Mandya,Mysore,Mandya
+184,Mysore,Mysore,Mysore,Mysore
+185,Mysore,Raichur,Mysore,Raichur
+186,Mysore,Shimoga,NA,NA
+187,Mysore,Tumkur,Mysore,Tumkur
+188,Mysore,Uttar Kannad,NA,NA
+189,Orissa,Baleshwar,NA,NA
+190,Orissa,Bolangir,Orissa,Bolangir
+191,Orissa,Boudh-Kandhamal,NA,NA
+192,Orissa,Cuttack,Orissa,Cuttack
+193,Orissa,Dhenkanal,Orissa,Dhenkanal
+194,Orissa,Ganjam,Orissa,Ganjam
+195,Orissa,Kalahandi,Orissa,Kalahandi
+196,Orissa,Keonjhar,Orissa,Keonjhar
+197,Orissa,Koraput,Orissa,Koraput
+198,Orissa,Mayurbhanj,NA,NA
+199,Orissa,Puri,Orissa,Puri
+200,Orissa,Sambalpur,Orissa,Sambalpur
+201,Orissa,Sundargarh,Orissa,Sundargarh
+202,Punjab,Amritsar,Punjab,Amritsar
+203,Punjab,Bathinda,NA,NA
+204,Punjab,Firozpur,NA,NA
+205,Punjab,Gurdaspur,Punjab,Gurdaspur
+206,Punjab,Hoshiarpur,Punjab,Hoshiarpur
+207,Punjab,Jalandhar,Punjab,Jalandhar
+208,Punjab,Kapurthala,Punjab,Kapurthala
+209,Punjab,Ludhiana,Punjab,Ludhiana
+210,Punjab,Patiala,Punjab,Patiala
+211,Punjab,Ropar,NA,NA
+212,Punjab,Sangrur,Punjab,Sangrur
+213,Rajasthan,Ajmer,Rajasthan,Ajmer
+214,Rajasthan,Alwar,Rajasthan,Alwar
+215,Rajasthan,Banswara,Rajasthan,Banswara
+216,Rajasthan,Barmer,Rajasthan,Barmer
+217,Rajasthan,Bharatpur,Rajasthan,Bharatpur
+218,Rajasthan,Bhilwara,Rajasthan,Bhilwara
+219,Rajasthan,Bikaner,Rajasthan,Bikaner
+220,Rajasthan,Bundi,Rajasthan,Bundi
+221,Rajasthan,Chittaurgarh,NA,NA
+222,Rajasthan,Churu,Rajasthan,Churu
+223,Rajasthan,Dungarpur,Rajasthan,Dungarpur
+224,Rajasthan,Ganganagar,Rajasthan,Ganganagar
+225,Rajasthan,Jaipur,Rajasthan,Jaipur
+226,Rajasthan,Jaisalmer,Rajasthan,Jaisalmer
+227,Rajasthan,Jalor,NA,NA
+228,Rajasthan,Jhalawar,Rajasthan,Jhalawar
+229,Rajasthan,Jhunjhunun,NA,NA
+230,Rajasthan,Jodhpur,Rajasthan,Jodhpur
+231,Rajasthan,Kota,Rajasthan,Kota
+232,Rajasthan,Nagaur,Rajasthan,Nagaur
+233,Rajasthan,Pali,Rajasthan,Pali
+234,Rajasthan,Sawai Madhopur,NA,NA
+235,Rajasthan,Sikar,Rajasthan,Sikar
+236,Rajasthan,Sirohi,Rajasthan,Sirohi
+237,Rajasthan,Tonk,Rajasthan,Tonk
+238,Rajasthan,Udaipur,Rajasthan,Udaipur
+239,Tamil Nadu,Chengalpattu,NA,NA
+240,Tamil Nadu,Coimbatore,Tamil Nadu,Coimbatore
+241,Tamil Nadu,Dharmapuri,NA,NA
+242,Tamil Nadu,Kanniyakumari,NA,NA
+243,Tamil Nadu,Madras,NA,NA
+244,Tamil Nadu,Madurai,Tamil Nadu,Madurai
+245,Tamil Nadu,Nilgiris,NA,NA
+246,Tamil Nadu,North Arcot,NA,NA
+247,Tamil Nadu,Ramanathapuram,NA,NA
+248,Tamil Nadu,Salem,Tamil Nadu,Salem
+249,Tamil Nadu,South Arcot,NA,NA
+250,Tamil Nadu,Thanjavur,Tamil Nadu,Thanjavur
+251,Tamil Nadu,Tiruchchirappalli,NA,NA
+252,Tamil Nadu,Tirunelveli,NA,NA
+253,Uttar Pradesh,Agra,Uttar Pradesh,Agra
+254,Uttar Pradesh,Aligarh,Uttar Pradesh,Aligarh
+255,Uttar Pradesh,Allahabad,Uttar Pradesh,Allahabad
+256,Uttar Pradesh,Almora,NA,NA
+257,Uttar Pradesh,Azamgarh,Uttar Pradesh,Azamgarh
+258,Uttar Pradesh,Badaun,NA,NA
+259,Uttar Pradesh,Bahraich,Uttar Pradesh,Bahraich
+260,Uttar Pradesh,Ballia,Uttar Pradesh,Ballia
+261,Uttar Pradesh,Banda,Uttar Pradesh,Banda
+262,Uttar Pradesh,Bara Banki,NA,NA
+263,Uttar Pradesh,Bareilly,Uttar Pradesh,Bareilly
+264,Uttar Pradesh,Basti,Uttar Pradesh,Basti
+265,Uttar Pradesh,Bijnor,Uttar Pradesh,Bijnor
+266,Uttar Pradesh,Bulandshahr,NA,NA
+267,Uttar Pradesh,Chamoli,Uttar Pradesh,Chamoli
+268,Uttar Pradesh,Dehradun,Uttar Pradesh,Dehradun
+269,Uttar Pradesh,Deoria,Uttar Pradesh,Deoria
+270,Uttar Pradesh,Etah,Uttar Pradesh,Etah
+271,Uttar Pradesh,Etawah,Uttar Pradesh,Etawah
+272,Uttar Pradesh,Faizabad,Uttar Pradesh,Faizabad
+273,Uttar Pradesh,Farrukhabad,Uttar Pradesh,Farrukhabad
+274,Uttar Pradesh,Fatehpur,Uttar Pradesh,Fatehpur
+275,Uttar Pradesh,Ghazipur,Uttar Pradesh,Ghazipur
+276,Uttar Pradesh,Gonda,Uttar Pradesh,Gonda
+277,Uttar Pradesh,Gorakhpur,Uttar Pradesh,Gorakhpur
+278,Uttar Pradesh,Hamirpur,Uttar Pradesh,Hamirpur
+279,Uttar Pradesh,Hardoi,Uttar Pradesh,Hardoi
+280,Uttar Pradesh,Jalaun,Uttar Pradesh,Jalaun
+281,Uttar Pradesh,Jaunpur,Uttar Pradesh,Jaunpur
+282,Uttar Pradesh,Jhansi,Uttar Pradesh,Jhansi
+283,Uttar Pradesh,Kanpur,Uttar Pradesh,Kanpur
+284,Uttar Pradesh,Lakhimpur Kheri,NA,NA
+285,Uttar Pradesh,Lucknow,Uttar Pradesh,Lucknow
+286,Uttar Pradesh,Mainpuri,Uttar Pradesh,Mainpuri
+287,Uttar Pradesh,Mathura,Uttar Pradesh,Mathura
+288,Uttar Pradesh,Meerut,Uttar Pradesh,Meerut
+289,Uttar Pradesh,Mirzapur,NA,NA
+290,Uttar Pradesh,Moradabad,Uttar Pradesh,Moradabad
+291,Uttar Pradesh,Muzaffarnagar,Uttar Pradesh,Muzaffarnagar
+292,Uttar Pradesh,Naini Tal,NA,NA
+293,Uttar Pradesh,Nainital,Uttar Pradesh,Nainital
+294,Uttar Pradesh,Pauri Garhwal,NA,NA
+295,Uttar Pradesh,Pilibhit,Uttar Pradesh,Pilibhit
+296,Uttar Pradesh,Pithoragarh,NA,NA
+297,Uttar Pradesh,Pratapgarh,Uttar Pradesh,Pratapgarh
+298,Uttar Pradesh,Rae Bareli,NA,NA
+299,Uttar Pradesh,Rampur,Uttar Pradesh,Rampur
+300,Uttar Pradesh,Saharanpur,Uttar Pradesh,Saharanpur
+301,Uttar Pradesh,Shahjahanpur,Uttar Pradesh,Shahjahanpur
+302,Uttar Pradesh,Sitapur,Uttar Pradesh,Sitapur
+303,Uttar Pradesh,Sultanpur,Uttar Pradesh,Sultanpur
+304,Uttar Pradesh,Tehri Garhwal,Uttar Pradesh,Tehri Garhwal
+305,Uttar Pradesh,Unnao,Uttar Pradesh,Unnao
+306,Uttar Pradesh,Uttarkashi,NA,NA
+307,Uttar Pradesh,Varanasi,Uttar Pradesh,Varanasi
+308,West Bengal,24 Parganas,West Bengal,24 Parganas
+309,West Bengal,Bankura,West Bengal,Bankura
+310,West Bengal,Barddhaman,NA,NA
+311,West Bengal,Birbhum,West Bengal,Birbhum
+312,West Bengal,Calcutta,NA,NA
+313,West Bengal,Darjiling,NA,NA
+314,West Bengal,Haora,NA,NA
+315,West Bengal,Hugli,NA,NA
+316,West Bengal,Jalpaiguri,West Bengal,Jalpaiguri
+317,West Bengal,Kochbihar,NA,NA
+318,West Bengal,Maldah,NA,NA
+319,West Bengal,Midnapore,NA,NA
+320,West Bengal,Murshidabad,West Bengal,Murshidabad
+321,West Bengal,Nadia,West Bengal,Nadia
+322,West Bengal,Puruliya,NA,NA
+323,West Bengal,West Dinajpur,West Bengal,West Dinajpur

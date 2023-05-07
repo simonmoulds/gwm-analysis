@@ -53,7 +53,7 @@ rule grass_make_jules_frac:
     script:
         "scripts/grass-make-jules-frac.py"
 
-
+# TODO - the next three scripts could be simplified
 rule grass_make_india_land_frac:
     input:
         'results/done/grass_make_jules_frac.done'
@@ -84,6 +84,7 @@ rule grass_define_igp_region:
         "scripts/grass-define-custom-region.py"
 
 
+# TODO merge this script with grass_make_jules_frac
 rule grass_write_jules_ancil:
     input:
         'results/done/grass_define_igp_region.done',
@@ -93,3 +94,42 @@ rule grass_write_jules_ancil:
         'envs/conda_environment_grass.yml'
     script:
         "scripts/grass-write-jules-ancil-maps.py"
+
+# TODO test the output of the above script
+
+# At this point we need to divide cropland into the following classes:
+
+# c3_irrigated_continuous
+# c4_irrigated_continuous
+# irrigated_triple_season
+# c3_irrigated_triple_season
+# c4_irrigated_triple_season
+# irrigated_double_season
+# c3_irrigated_double_season
+# c4_irrigated_double_season
+# irrigated_single_season
+# c3_irrigated_single_season
+# c4_irrigated_single_season
+# rainfed
+# c3_rainfed
+# c4_rainfed
+# fallow
+# c3_fallow
+# c4_fallow
+
+# The driving data will come from ICRISAT. We need a time series of
+# maps that show:
+# - Single season irrigation
+# - Double season irrigation
+# - [Triple season irrigation]
+# - [Continuous irrigation]
+# - Fallow cropland
+# Once we have these we can use the C3/C4 fraction data to divide
+# between the two classes (as in grass_detect_growing_seasons.sh)
+
+# python3 python/make-ants-frac-input.py -d $OUTDIR/netcdf
+# # Next we create a land cover fraction file which includes
+# # the additional crop classes (rainfed/irrigated-1/
+# # irrigated-2/irrigated-3/fallow as separate PFTs.
+# # * jules_frac_5pft_ants_YYYY_SUFFIX.nc
+# python3 python/make-frac-input.py -d $OUTDIR/netcdf
